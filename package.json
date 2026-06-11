@@ -1,0 +1,16 @@
+{
+  "name": "akemi",
+  "version": "0.1.0",
+  "description": "AI agent for graph-based codebase documentation and development lifecycle management",
+  "bin": {
+    "akemi": "./src/scripts/install.sh"
+  },
+  "scripts": {
+    "install-local": "bash src/scripts/install.sh --local",
+    "validate": "bash src/scripts/validate.sh",
+    "rebuild-index": "bash src/scripts/rebuild-index.sh",
+    "rebuild-views": "bash src/scripts/rebuild-views.sh"
+  },
+  "keywords": ["ai", "documentation", "graph", "codebase", "claude", "agent"],
+  "license": "MIT"
+}

@@ -1,0 +1,20 @@
+node_modules/
+.DS_Store
+*.log
+.index-stale
+
+# Python artifacts
+.venv/
+.venv-test/
+venv/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Local environment and editor state
+.env
+.claude/settings.local.json
