@@ -28,6 +28,11 @@ KIND_PREFIX: dict[str, str] = {
     "story": "story",
     "task": "task",
     "bug": "bug",
+    "capability": "cap",
+    "feature": "feat",
+    "pi": "pi",
+    "iteration": "iter",
+    "objective": "obj",
 }
 
 

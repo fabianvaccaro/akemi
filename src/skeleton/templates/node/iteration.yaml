@@ -1,0 +1,19 @@
+---
+akemi: v1
+kind: iteration
+id: iter-CHANGEME
+name: CHANGEME
+status: planned
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+number: 1               # iteration number within the PI
+start: YYYY-MM-DD
+end: YYYY-MM-DD         # typically 2 weeks after start
+capacity: null          # points the team can absorb
+committed_points: null  # points committed at iteration planning
+refs:
+  - { rel: part_of, to: pi-CHANGEME }
+---
+Iteration goal. Stories planned here point at this node
+with planned_for refs.

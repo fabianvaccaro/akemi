@@ -1,16 +1,15 @@
 ---
 akemi: v1
-kind: epic
-id: epic-CHANGEME
+kind: feature
+id: feat-CHANGEME
 name: CHANGEME
 status: planned
 tags: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-priority: high
-target_date: null
+priority: medium
 owner: null
-state: funnel  # funnel | analyzing | backlog | implementing | done
+state: backlog  # backlog | refining | ready | in_progress | done
 wsjf:
   business_value: null   # 1-10
   time_criticality: null # 1-10
@@ -20,8 +19,7 @@ wsjf:
 acceptance_criteria:
   - CHANGEME
 refs:
-  - { rel: contains, to: story-CHANGEME }
-  - { rel: part_of, to: dom-CHANGEME }
+  - { rel: realizes, to: cap-CHANGEME }  # or epic-CHANGEME for small setups
 ---
-Business objective this epic delivers.
-Success criteria and measurable outcomes.
+Benefit hypothesis: what user-visible value this feature delivers.
+Fits in one PI. Broken into stories via incoming realizes refs.

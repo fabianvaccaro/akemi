@@ -1,0 +1,17 @@
+---
+akemi: v1
+kind: objective
+id: obj-CHANGEME
+name: CHANGEME
+status: planned
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+business_value: null  # 1-10, assigned by business owners at PI planning
+committed: true       # false for stretch objectives
+refs:
+  - { rel: part_of, to: pi-CHANGEME }
+  - { rel: supported_by, to: feat-CHANGEME }
+---
+PI objective: business outcome stated in plain language.
+List the features that deliver it via supported_by refs.

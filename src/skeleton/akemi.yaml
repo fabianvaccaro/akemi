@@ -44,6 +44,11 @@ graph:
     story: story
     task: task
     bug: bug
+    capability: cap
+    feature: feat
+    pi: pi
+    iteration: iter
+    objective: obj
 
 standards:
   oop_default: true

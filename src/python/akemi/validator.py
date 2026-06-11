@@ -1,6 +1,6 @@
 """Graph integrity checks for Akemi.
 
-Replaces validate.sh with pure Python.  Runs eight validation checks
+Replaces validate.sh with pure Python.  Runs nine validation checks
 against the node files, journey files, and the source tree, producing
 structured results matching the bash output format.
 """
@@ -81,6 +81,10 @@ def validate(akemi_dir: str | Path) -> ValidationResult:
          (warning only).
       8. Journey refs -- all ``graph_refs`` in journey YAML files must
          reference existing node IDs.
+      9. SAFe hierarchy -- stories should realize a feature or epic,
+         features should realize a capability or epic, and iterations
+         should be part_of a PI (warnings only; skipped when the graph
+         has no feature/story/pi nodes).
 
     Returns a :class:`ValidationResult` whose :attr:`error_count` can
     serve as a process exit code.
@@ -310,7 +314,79 @@ def validate(akemi_dir: str | Path) -> ValidationResult:
     # ------------------------------------------------------------------
     _check_journey_refs(akemi_dir, all_ids, result)
 
+    # ------------------------------------------------------------------
+    # 9. SAFe hierarchy (warnings only, never failures)
+    # ------------------------------------------------------------------
+    _check_safe_hierarchy(nodes, result)
+
     return result
+
+
+# Maps a work-item kind to its ID prefix, used to resolve refs whose
+# target node file does not exist yet (broken refs are already flagged
+# by check 1).
+_SAFE_PREFIX: dict[str, str] = {
+    "epic": "epic",
+    "capability": "cap",
+    "feature": "feat",
+    "pi": "pi",
+}
+
+
+def _check_safe_hierarchy(
+    nodes: dict[str, NodeFile],
+    result: ValidationResult,
+) -> None:
+    """Check 9: SAFe work-item hierarchy (warnings only).
+
+    Skipped entirely when the graph has no feature/story/pi nodes so
+    plain code-graphs stay clean.
+    """
+    has_work_items = any(
+        n.kind in ("feature", "story", "pi") for n in nodes.values()
+    )
+    if not has_work_items:
+        result.passes.append("SAFe hierarchy: no work items found (skipped)")
+        return
+
+    def _has_ref_to_kind(node: NodeFile, rel: str, kinds: tuple[str, ...]) -> bool:
+        for ref in node.refs:
+            if ref.rel != rel or not ref.to:
+                continue
+            target = nodes.get(ref.to)
+            if target is not None:
+                if target.kind in kinds:
+                    return True
+                continue
+            # Target node missing: fall back to ID prefix matching.
+            prefix = ref.to.split("-", 1)[0]
+            if any(_SAFE_PREFIX[k] == prefix for k in kinds):
+                return True
+        return False
+
+    warn_count = 0
+    for nid, node in sorted(nodes.items()):
+        if node.kind == "story":
+            if not _has_ref_to_kind(node, "realizes", ("feature", "epic")):
+                result.warnings.append(
+                    f"SAFe hierarchy: {nid} has no realizes ref to a feature or epic"
+                )
+                warn_count += 1
+        elif node.kind == "feature":
+            if not _has_ref_to_kind(node, "realizes", ("capability", "epic")):
+                result.warnings.append(
+                    f"SAFe hierarchy: {nid} has no realizes ref to a capability or epic"
+                )
+                warn_count += 1
+        elif node.kind == "iteration":
+            if not _has_ref_to_kind(node, "part_of", ("pi",)):
+                result.warnings.append(
+                    f"SAFe hierarchy: {nid} has no part_of ref to a pi"
+                )
+                warn_count += 1
+
+    if warn_count == 0:
+        result.passes.append("SAFe hierarchy: all work items linked")
 
 
 def _check_journey_refs(

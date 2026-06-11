@@ -1,0 +1,17 @@
+---
+akemi: v1
+kind: pi
+id: pi-CHANGEME
+name: CHANGEME
+status: planned
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+start: YYYY-MM-DD  # PI start date
+end: YYYY-MM-DD    # PI end date (typically 8-12 weeks after start)
+refs:
+  - { rel: contains, to: iter-CHANGEME }
+  - { rel: contains, to: obj-CHANGEME }
+---
+Program Increment theme and milestones.
+Iterations and objectives point here with part_of refs.

@@ -9,8 +9,13 @@ created: YYYY-MM-DD
 updated: YYYY-MM-DD
 priority: medium
 points: null
+story_points: null  # estimate in points (mirrors points for SAFe tooling)
+state: backlog      # backlog | refining | ready | in_progress | done
+acceptance_criteria:
+  - CHANGEME
 refs:
-  - { rel: part_of, to: epic-CHANGEME }
+  - { rel: realizes, to: feat-CHANGEME }     # parent feature (or epic directly)
+  - { rel: planned_for, to: iter-CHANGEME }  # iteration this story is scheduled in
   - { rel: breaks_into, to: task-CHANGEME }
   - { rel: implemented_by, to: mod-CHANGEME }
 ---

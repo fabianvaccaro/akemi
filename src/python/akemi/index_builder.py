@@ -33,6 +33,11 @@ ALL_KINDS: list[str] = [
     "story",
     "task",
     "bug",
+    "capability",
+    "feature",
+    "pi",
+    "iteration",
+    "objective",
 ]
 
 

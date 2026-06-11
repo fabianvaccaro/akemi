@@ -10,6 +10,7 @@ updated: YYYY-MM-DD
 priority: medium
 estimate: null
 assignee: null
+state: backlog  # backlog | in_progress | done
 refs:
   - { rel: part_of, to: story-CHANGEME }
   - { rel: implemented_by, to: cls-CHANGEME }

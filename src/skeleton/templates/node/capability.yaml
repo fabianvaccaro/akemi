@@ -1,14 +1,13 @@
 ---
 akemi: v1
-kind: epic
-id: epic-CHANGEME
+kind: capability
+id: cap-CHANGEME
 name: CHANGEME
 status: planned
 tags: []
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 priority: high
-target_date: null
 owner: null
 state: funnel  # funnel | analyzing | backlog | implementing | done
 wsjf:
@@ -20,8 +19,8 @@ wsjf:
 acceptance_criteria:
   - CHANGEME
 refs:
-  - { rel: contains, to: story-CHANGEME }
-  - { rel: part_of, to: dom-CHANGEME }
+  - { rel: realizes, to: epic-CHANGEME }
 ---
-Business objective this epic delivers.
-Success criteria and measurable outcomes.
+Solution-level behavior this capability provides.
+Spans multiple features. Use only when an epic is too
+large to break into features directly.

@@ -10,7 +10,7 @@ updated: YYYY-MM-DD
 severity: medium
 reproducible: true
 refs:
-  - { rel: affects, to: cls-CHANGEME }
+  - { rel: affects, to: cls-CHANGEME }  # target can be a story, feature, or class
   - { rel: fixed_by, to: task-CHANGEME }
   - { rel: tested_by, to: test-CHANGEME }
 ---
