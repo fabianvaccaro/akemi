@@ -3,7 +3,7 @@
 # Supports local and remote (SSH) installation.
 set -euo pipefail
 
-AKEMI_VERSION="0.2.0"
+AKEMI_VERSION="0.3.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 
@@ -17,7 +17,7 @@ Options:
   --local              Install in target directory (default)
   --ssh USER@HOST:PATH Install on remote host via SSH
   --skip-bootstrap     Create structure only, don't scan codebase
-  --agent AGENT        Agent to configure: claude (default), cursor, aider
+  --agent AGENT        Agent to configure: claude (default), copilot, codex, gemini, cursor, aider
   --depth DEPTH        Bootstrap depth: tier1, tier2 (default)
   --monorepo           Force monorepo detection (auto-detected by default)
   --dry-run            Show what would be done
@@ -60,8 +60,8 @@ done
 # Validate option values: they are interpolated into a remote ssh command,
 # so restrict them to the known sets
 case "$AGENT" in
-  claude|cursor|aider) ;;
-  *) echo "ERROR: invalid --agent '${AGENT}' (claude|cursor|aider)" >&2; exit 1 ;;
+  claude|copilot|codex|gemini|cursor|aider) ;;
+  *) echo "ERROR: invalid --agent '${AGENT}' (claude|copilot|codex|gemini|cursor|aider)" >&2; exit 1 ;;
 esac
 case "$DEPTH" in
   tier1|tier2) ;;
@@ -88,7 +88,7 @@ install_local() {
 
   # Step 1: Create directory structure
   echo "  Creating .akemi/ structure..."
-  mkdir -p "$project_dir/.akemi"/{graph/{nodes/{domain,module,file,class,interface,function,api,resource,requirement,adr,technology,test,doc,config,epic,story,task,bug},views},guidelines,templates/{node,code},agents/{claude/{rules,skills,commands,agents},cursor,aider,windsurf},scripts,journeys,designs}
+  mkdir -p "$project_dir/.akemi"/{graph/{nodes/{domain,module,file,class,interface,function,api,resource,requirement,adr,technology,test,doc,config,epic,story,task,bug,capability,feature,pi,iteration,objective},views},guidelines,templates/{node,code},agents/{claude/{rules,skills,commands,agents},cursor,aider,windsurf},scripts,journeys,designs}
 
   # Step 2: Copy skeleton files
   echo "  Installing skeleton files..."
@@ -102,18 +102,18 @@ install_local() {
     cp "$SKELETON_DIR/graph/index.yaml" "$project_dir/.akemi/graph/index.yaml"
 
   # View templates
-  for view in architecture api-surface test-coverage dependency-tree tech-stack; do
+  for view in architecture api-surface test-coverage dependency-tree tech-stack backlog; do
     [[ ! -f "$project_dir/.akemi/graph/views/${view}.md" ]] && \
       cp "$SKELETON_DIR/graph/views/${view}.md" "$project_dir/.akemi/graph/views/${view}.md"
   done
 
   # Node templates
-  for kind in domain module file class interface function api resource requirement adr technology test doc config epic story task bug; do
+  for kind in domain module file class interface function api resource requirement adr technology test doc config epic story task bug capability feature pi iteration objective; do
     cp "$SKELETON_DIR/templates/node/${kind}.yaml" "$project_dir/.akemi/templates/node/${kind}.yaml"
   done
 
   # Guidelines
-  for guide in coding-standards testing-standards documentation-standards graph-maintenance ai-friendly; do
+  for guide in coding-standards testing-standards documentation-standards graph-maintenance ai-friendly safe-scrum; do
     cp "$SKELETON_DIR/guidelines/${guide}.md" "$project_dir/.akemi/guidelines/${guide}.md"
   done
 
@@ -149,6 +149,41 @@ install_local() {
 
   # Step 3: Agent integration
   echo "  Configuring ${AGENT} integration..."
+
+  # Shared graph-first briefing for instruction-file based agents
+  # (copilot, codex, gemini). Appends to the target file; skips if the
+  # "<!-- akemi -->" marker is already present.
+  write_agent_briefing() {
+    local target_file="$1"
+    if [[ -f "$target_file" ]] && grep -qF "<!-- akemi -->" "$target_file"; then
+      echo "  Akemi block already present in ${target_file}"
+      return 0
+    fi
+    mkdir -p "$(dirname "$target_file")"
+    cat >> "$target_file" << 'BRIEFING'
+<!-- akemi -->
+## Akemi codebase graph
+
+This project documents its codebase as a YAML graph under `.akemi/`.
+
+Before making changes:
+- Read `.akemi/graph/index.yaml` to locate the nodes relevant to the task.
+- Open the node files it points to under `.akemi/graph/nodes/<kind>/`.
+
+After making changes:
+- Update the YAML node for each file, class, or function you changed.
+- Add new nodes from `.akemi/templates/node/` when you create new code.
+- Run `.akemi/scripts/validate.sh` and fix anything it reports.
+
+Key node kinds: domain, module, file, class, interface, function, api, test, adr.
+Work items: epic > capability > feature > story (plus task and bug).
+Generated views live in `.akemi/graph/views/`. Do not edit them by hand;
+regenerate with `.akemi/scripts/rebuild-views.sh`.
+<!-- /akemi -->
+BRIEFING
+    echo "  Wrote Akemi briefing to ${target_file}"
+  }
+
   case "$AGENT" in
     claude)
       # Copy Claude agent files
@@ -156,7 +191,7 @@ install_local() {
 
       # Rules
       for rule in "$SKELETON_DIR"/agents/claude/rules/*.md; do
-        [[ -f "$rule" ]] && cp "$rule" "$project_dir/.akemi/agents/claude/rules/"
+        [[ -f "$rule" && "$rule" != *.original.md ]] && cp "$rule" "$project_dir/.akemi/agents/claude/rules/"
       done
 
       # Skills
@@ -166,16 +201,17 @@ install_local() {
         sname=$(basename "$skill_dir")
         mkdir -p "$project_dir/.akemi/agents/claude/skills/$sname"
         cp -r "$skill_dir"* "$project_dir/.akemi/agents/claude/skills/$sname/"
+        rm -f "$project_dir/.akemi/agents/claude/skills/$sname/"*.original.md
       done
 
       # Commands
       for cmd in "$SKELETON_DIR"/agents/claude/commands/*.md; do
-        [[ -f "$cmd" ]] && cp "$cmd" "$project_dir/.akemi/agents/claude/commands/"
+        [[ -f "$cmd" && "$cmd" != *.original.md ]] && cp "$cmd" "$project_dir/.akemi/agents/claude/commands/"
       done
 
       # Agents
       for agent_file in "$SKELETON_DIR"/agents/claude/agents/*.md; do
-        [[ -f "$agent_file" ]] && cp "$agent_file" "$project_dir/.akemi/agents/claude/agents/"
+        [[ -f "$agent_file" && "$agent_file" != *.original.md ]] && cp "$agent_file" "$project_dir/.akemi/agents/claude/agents/"
       done
 
       # Create hooks.json
@@ -199,6 +235,15 @@ HOOKS
 
       # Sync to .claude/
       bash "$SCRIPT_DIR/sync-claude.sh" "$project_dir"
+      ;;
+    copilot)
+      write_agent_briefing "$project_dir/.github/copilot-instructions.md"
+      ;;
+    codex)
+      write_agent_briefing "$project_dir/AGENTS.md"
+      ;;
+    gemini)
+      write_agent_briefing "$project_dir/GEMINI.md"
       ;;
     cursor)
       echo "  Cursor adapter not yet implemented. Structure created for future use."

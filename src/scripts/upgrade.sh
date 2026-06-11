@@ -4,7 +4,7 @@
 # Never deletes or modifies existing graph nodes.
 set -euo pipefail
 
-AKEMI_VERSION="0.2.0"
+AKEMI_VERSION="0.3.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 
@@ -21,7 +21,7 @@ echo "==> Upgrading Akemi to v${AKEMI_VERSION} in ${PROJECT_ROOT}"
 
 # Step 1: Create new directories (safe - mkdir -p won't touch existing)
 echo "  Adding new directories..."
-for kind in epic story task bug; do
+for kind in epic story task bug capability feature pi iteration objective; do
   mkdir -p "$AKEMI_DIR/graph/nodes/$kind"
 done
 mkdir -p "$AKEMI_DIR/journeys"
@@ -29,7 +29,7 @@ mkdir -p "$AKEMI_DIR/designs"
 
 # Step 2: Copy new templates (safe - only adds, doesn't overwrite existing node files)
 echo "  Updating node templates..."
-for kind in domain module file class interface function api resource requirement adr technology test doc config epic story task bug; do
+for kind in domain module file class interface function api resource requirement adr technology test doc config epic story task bug capability feature pi iteration objective; do
   cp "$SKELETON_DIR/templates/node/${kind}.yaml" "$AKEMI_DIR/templates/node/${kind}.yaml" 2>/dev/null || true
 done
 
@@ -65,10 +65,10 @@ echo "  Installing Python dependencies..."
 
 # Add venv to gitignore if not already
 if [[ -d "$PROJECT_ROOT/.git" ]]; then
-  local gitignore="$PROJECT_ROOT/.gitignore"
+  GITIGNORE="$PROJECT_ROOT/.gitignore"
   for entry in ".akemi/.venv/" ".akemi/python/*.egg-info/"; do
-    if [[ ! -f "$gitignore" ]] || ! grep -qF "$entry" "$gitignore"; then
-      echo "$entry" >> "$gitignore"
+    if [[ ! -f "$GITIGNORE" ]] || ! grep -qF "$entry" "$GITIGNORE"; then
+      echo "$entry" >> "$GITIGNORE"
     fi
   done
 fi
@@ -80,7 +80,7 @@ cp "$SKELETON_DIR/templates/journey-template.yaml" "$AKEMI_DIR/templates/journey
 
 # Step 4: Update guidelines (safe - overwrites guidelines, not user content)
 echo "  Updating guidelines..."
-for guide in coding-standards testing-standards documentation-standards graph-maintenance ai-friendly; do
+for guide in coding-standards testing-standards documentation-standards graph-maintenance ai-friendly safe-scrum; do
   cp "$SKELETON_DIR/guidelines/${guide}.md" "$AKEMI_DIR/guidelines/${guide}.md"
 done
 
@@ -89,7 +89,7 @@ echo "  Updating Claude integration..."
 cp "$SKELETON_DIR/agents/claude/CLAUDE.md" "$AKEMI_DIR/agents/claude/CLAUDE.md"
 
 for rule in "$SKELETON_DIR"/agents/claude/rules/*.md; do
-  [[ -f "$rule" ]] && cp "$rule" "$AKEMI_DIR/agents/claude/rules/"
+  [[ -f "$rule" && "$rule" != *.original.md ]] && cp "$rule" "$AKEMI_DIR/agents/claude/rules/"
 done
 
 for skill_dir in "$SKELETON_DIR"/agents/claude/skills/*/; do
@@ -97,14 +97,15 @@ for skill_dir in "$SKELETON_DIR"/agents/claude/skills/*/; do
   sname=$(basename "$skill_dir")
   mkdir -p "$AKEMI_DIR/agents/claude/skills/$sname"
   cp -r "$skill_dir"* "$AKEMI_DIR/agents/claude/skills/$sname/"
+  rm -f "$AKEMI_DIR/agents/claude/skills/$sname/"*.original.md
 done
 
 for cmd in "$SKELETON_DIR"/agents/claude/commands/*.md; do
-  [[ -f "$cmd" ]] && cp "$cmd" "$AKEMI_DIR/agents/claude/commands/"
+  [[ -f "$cmd" && "$cmd" != *.original.md ]] && cp "$cmd" "$AKEMI_DIR/agents/claude/commands/"
 done
 
 for agent in "$SKELETON_DIR"/agents/claude/agents/*.md; do
-  [[ -f "$agent" ]] && cp "$agent" "$AKEMI_DIR/agents/claude/agents/"
+  [[ -f "$agent" && "$agent" != *.original.md ]] && cp "$agent" "$AKEMI_DIR/agents/claude/agents/"
 done
 
 # Step 6: Sync to .claude/ directory
@@ -115,7 +116,7 @@ bash "$SCRIPT_DIR/sync-claude.sh" "$PROJECT_ROOT"
 echo "  Updating config..."
 AKEMI_YAML="$AKEMI_DIR/akemi.yaml"
 if [[ -f "$AKEMI_YAML" ]]; then
-  for prefix_line in "    epic: epic" "    story: story" "    task: task" "    bug: bug"; do
+  for prefix_line in "    epic: epic" "    story: story" "    task: task" "    bug: bug" "    capability: cap" "    feature: feat" "    pi: pi" "    iteration: iter" "    objective: obj"; do
     if ! grep -qF "$prefix_line" "$AKEMI_YAML"; then
       # Add after the config prefix line
       sed -i.bak "/    config: cfg/a\\
@@ -142,9 +143,8 @@ bash "$SCRIPT_DIR/rebuild-views.sh" "$AKEMI_DIR"
 
 echo ""
 echo "==> Upgrade to v${AKEMI_VERSION} complete!"
-echo "    New: journeys/ and designs/ directories"
-echo "    New: journey ref validation (check #8) in validator"
-echo "    New: workspace-aware missing source node detection"
-echo "    Updated: agent directives with journey awareness"
-echo "    Updated: config round-trip preserves agents/graph/standards sections"
+echo "    New: SAFe work item kinds (capability, feature, pi, iteration, objective)"
+echo "    New: backlog view and safe-scrum guideline"
+echo "    New: Java and Scala support (Maven, Gradle, sbt)"
+echo "    Updated: agent definitions with graph-first workflow and failure protocol"
 echo "    Existing graph nodes: untouched"

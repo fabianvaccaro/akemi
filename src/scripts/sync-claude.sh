@@ -19,6 +19,7 @@ mkdir -p "$DOT_CLAUDE"/{rules,skills,commands,agents}
 synced=0
 for rule in "$AKEMI_CLAUDE"/rules/*.md; do
   [[ -f "$rule" ]] || continue
+  [[ "$rule" == *.original.md ]] && continue
   cp "$rule" "$DOT_CLAUDE/rules/$(basename "$rule")"
   synced=$((synced + 1))
 done
@@ -31,6 +32,7 @@ for skill_dir in "$AKEMI_CLAUDE"/skills/*/; do
   local_name=$(basename "$skill_dir")
   mkdir -p "$DOT_CLAUDE/skills/$local_name"
   cp -r "$skill_dir"* "$DOT_CLAUDE/skills/$local_name/"
+  rm -f "$DOT_CLAUDE/skills/$local_name/"*.original.md
   synced=$((synced + 1))
 done
 echo "  Skills synced: $synced"
@@ -39,6 +41,7 @@ echo "  Skills synced: $synced"
 synced=0
 for cmd in "$AKEMI_CLAUDE"/commands/*.md; do
   [[ -f "$cmd" ]] || continue
+  [[ "$cmd" == *.original.md ]] && continue
   cp "$cmd" "$DOT_CLAUDE/commands/$(basename "$cmd")"
   synced=$((synced + 1))
 done
@@ -48,6 +51,7 @@ echo "  Commands synced: $synced"
 synced=0
 for agent in "$AKEMI_CLAUDE"/agents/*.md; do
   [[ -f "$agent" ]] || continue
+  [[ "$agent" == *.original.md ]] && continue
   cp "$agent" "$DOT_CLAUDE/agents/$(basename "$agent")"
   synced=$((synced + 1))
 done
