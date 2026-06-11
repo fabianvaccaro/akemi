@@ -22,6 +22,7 @@ _LANG_EXT: dict[str, str] = {
     "go": "go",
     "rust": "rs",
     "java": "java",
+    "scala": "scala",
     "kotlin": "kt",
     "csharp": "cs",
 }
@@ -30,6 +31,7 @@ _LANG_EXT: dict[str, str] = {
 _LANG_EXTRA_EXT: dict[str, list[str]] = {
     "typescript": ["tsx"],
     "javascript": ["jsx"],
+    "scala": ["sc"],
 }
 
 _TEST_PATTERN: dict[str, str] = {
@@ -38,9 +40,18 @@ _TEST_PATTERN: dict[str, str] = {
     "python": "test_*.py",
     "go": "*_test.go",
     "rust": "*.rs",  # tests are inline in Rust
-    "java": "*Test.java",
+    "java": "*Test.java",  # test_all_patterns adds *Tests.java
+    "scala": "*Spec.scala",  # test_all_patterns adds *Test.scala, *Suite.scala
     "kotlin": "*Test.kt",
     "csharp": "*Tests.cs",
+}
+
+# Extra test glob patterns beyond the primary one in _TEST_PATTERN.
+_TEST_EXTRA_PATTERNS: dict[str, list[str]] = {
+    "typescript": ["*.test.tsx"],
+    "javascript": ["*.test.jsx"],
+    "java": ["*Tests.java"],
+    "scala": ["*Test.scala", "*Suite.scala"],
 }
 
 # File extensions recognised as source code (used by validator).
@@ -72,6 +83,19 @@ _TEST_DIR_NAMES: tuple[str, ...] = (
     "test",
     "__tests__",
     "spec",
+)
+
+# Maven/Gradle/sbt standard layout (java and scala). When these exist
+# they replace the generic "src" entry so that test sources under
+# src/test are not scanned as application source.
+_JVM_SOURCE_DIR_NAMES: tuple[str, ...] = (
+    "src/main/java",
+    "src/main/scala",
+)
+
+_JVM_TEST_DIR_NAMES: tuple[str, ...] = (
+    "src/test/java",
+    "src/test/scala",
 )
 
 # Subset of source dirs used when scoping to a workspace.
@@ -141,16 +165,12 @@ def test_all_patterns(lang: str) -> list[str]:
 
         >>> test_all_patterns('typescript')
         ['*.test.ts', '*.test.tsx']
+        >>> test_all_patterns('java')
+        ['*Test.java', '*Tests.java']
         >>> test_all_patterns('python')
         ['test_*.py']
     """
-    primary = test_pattern(lang)
-    extras = _LANG_EXTRA_EXT.get(lang, [])
-    patterns = [primary]
-    for ext in extras:
-        base_ext = lang_ext(lang)
-        patterns.append(primary.replace(f".{base_ext}", f".{ext}"))
-    return patterns
+    return [test_pattern(lang)] + _TEST_EXTRA_PATTERNS.get(lang, [])
 
 
 def source_dirs(root: str = ".") -> list[str]:
@@ -159,16 +179,28 @@ def source_dirs(root: str = ".") -> list[str]:
 
     Does **not** fall back to ``'.'`` when nothing matches (mirrors the
     shell implementation).
+
+    JVM Maven layout (``src/main/java`` / ``src/main/scala``) takes the
+    place of the generic ``src`` entry when present.
     """
     base = Path(root)
-    return [d for d in _SOURCE_DIR_NAMES if (base / d).is_dir()]
+    jvm = [d for d in _JVM_SOURCE_DIR_NAMES if (base / d).is_dir()]
+    dirs = [d for d in _SOURCE_DIR_NAMES if (base / d).is_dir()]
+    if jvm:
+        dirs = jvm + [d for d in dirs if d != "src"]
+    return dirs
 
 
 def test_dirs(root: str = ".") -> list[str]:
     """Return the subset of standard test directory names that exist
-    under *root*."""
+    under *root*.
+
+    Includes JVM Maven layout test roots (``src/test/java`` /
+    ``src/test/scala``) when present.
+    """
     base = Path(root)
-    return [d for d in _TEST_DIR_NAMES if (base / d).is_dir()]
+    jvm = [d for d in _JVM_TEST_DIR_NAMES if (base / d).is_dir()]
+    return jvm + [d for d in _TEST_DIR_NAMES if (base / d).is_dir()]
 
 
 def workspace_source_dirs(ws_root: str) -> list[str]:
@@ -176,9 +208,14 @@ def workspace_source_dirs(ws_root: str) -> list[str]:
 
     If none of the standard sub-directories exist, returns ``[ws_root]``
     so the caller always has at least one directory to scan.
+
+    JVM Maven layout roots replace the generic ``src`` entry when present.
     """
     base = Path(ws_root)
+    jvm = [str(base / d) for d in _JVM_SOURCE_DIR_NAMES if (base / d).is_dir()]
     dirs = [str(base / d) for d in _WS_SOURCE_DIR_NAMES if (base / d).is_dir()]
+    if jvm:
+        dirs = jvm + [d for d in dirs if d != str(base / "src")]
     if not dirs:
         dirs = [ws_root]
     return dirs
@@ -191,7 +228,8 @@ def workspace_test_dirs(ws_root: str) -> list[str]:
     project root (matching the shell implementation).
     """
     base = Path(ws_root)
-    dirs = [str(base / d) for d in _TEST_DIR_NAMES if (base / d).is_dir()]
+    dirs = [str(base / d) for d in _JVM_TEST_DIR_NAMES if (base / d).is_dir()]
+    dirs += [str(base / d) for d in _TEST_DIR_NAMES if (base / d).is_dir()]
 
     # Derive workspace name from the root path (strip trailing slash).
     ws_name = os.path.basename(ws_root.rstrip("/").rstrip("\\"))

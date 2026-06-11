@@ -4,6 +4,7 @@ Replaces parse-source.sh with a pure-Python implementation.
 Uses Python's ``ast`` module for Python files (most reliable) and
 tree-sitter for TypeScript/JavaScript.  Falls back to regex-based
 parsing when tree-sitter grammars are not installed.
+Java and Scala are scanned with regex only (no extra dependencies).
 """
 from __future__ import annotations
 
@@ -48,6 +49,10 @@ FRAMEWORK_SKIP: frozenset[str] = frozenset({
     "Omit", "Partial", "Pick", "Record", "Required", "Readonly",
     "Extract", "Exclude", "NonNullable", "ReturnType", "InstanceType",
     "Parameters",
+    # Java / Scala (Object, Exception and Record are already covered above)
+    "RuntimeException", "Throwable", "Serializable", "Comparable", "Enum",
+    "AnyRef", "AnyVal", "Product", "App", "Thread",
+    "AutoCloseable", "Cloneable",
 })
 
 ENUM_PARENTS: frozenset[str] = frozenset({
@@ -90,7 +95,8 @@ def scan_file(filepath: str | Path, language: str) -> list[ClassDef]:
     filepath:
         Absolute or relative path to the source file.
     language:
-        One of ``'python'``, ``'typescript'``, ``'javascript'``.
+        One of ``'python'``, ``'typescript'``, ``'javascript'``,
+        ``'java'``, ``'scala'``.
 
     Returns
     -------
@@ -101,6 +107,8 @@ def scan_file(filepath: str | Path, language: str) -> list[ClassDef]:
         "python": scan_python_file,
         "typescript": scan_typescript_file,
         "javascript": scan_javascript_file,
+        "java": scan_java_file,
+        "scala": scan_scala_file,
     }
     scanner = dispatch.get(language)
     if scanner is None:
@@ -609,6 +617,207 @@ def _scan_js_regex(source: str, filepath: str) -> list[ClassDef]:
         ))
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Java scanner (regex-based)
+# ---------------------------------------------------------------------------
+
+# Matches class/interface/enum/record declarations, with any leading
+# modifiers. Anchored at line start (after indentation) so .class
+# references and comment lines starting with // or * never match.
+_RE_JAVA_DECL = re.compile(
+    r"^[ \t]*"
+    r"(?:(?:public|protected|private|abstract|final|static|sealed|non-sealed|strictfp)\s+)*"
+    r"(class|interface|enum|record)\s+"
+    r"([A-Za-z_$][\w$]*)",
+    re.MULTILINE,
+)
+
+
+def scan_java_file(filepath: str | Path) -> list[ClassDef]:
+    """Parse a Java file for type declarations using regex.
+
+    Handles class, interface, enum and record declarations with
+    extends / implements clauses. interface maps to kind 'interface';
+    class, enum and record map to kind 'class'.
+    """
+    fp = Path(filepath)
+    try:
+        source = fp.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    results: list[ClassDef] = []
+
+    for m in _RE_JAVA_DECL.finditer(source):
+        keyword = m.group(1)
+        type_name = m.group(2)
+
+        header = _decl_header(source, m.end())
+        # Strip generic parameters first: they can contain 'extends'
+        # bounds (class Foo<T extends Bar>). Then strip record
+        # component lists.
+        header = _strip_bracketed(header, "<", ">")
+        header = _strip_bracketed(header, "(", ")")
+        # Permitted subtypes of a sealed type are not parents.
+        header = re.split(r"\bpermits\b", header)[0]
+
+        parents: list[str] = []
+        impl_split = re.split(r"\bimplements\b", header, maxsplit=1)
+        ext_match = re.search(r"\bextends\b(.*)", impl_split[0], re.DOTALL)
+        if ext_match:
+            parents.extend(_split_type_list(ext_match.group(1)))
+        if len(impl_split) > 1:
+            parents.extend(_split_type_list(impl_split[1]))
+
+        results.append(ClassDef(
+            name=type_name,
+            kind="interface" if keyword == "interface" else "class",
+            parents=parents,
+            filepath=str(fp),
+            line=source.count("\n", 0, m.start()) + 1,
+            language="java",
+        ))
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Scala scanner (regex-based)
+# ---------------------------------------------------------------------------
+
+# Matches class, case class, object, case object, trait and enum
+# declarations with any leading modifiers.
+_RE_SCALA_DECL = re.compile(
+    r"^[ \t]*"
+    r"(?:(?:abstract|final|sealed|implicit|open|private|protected)\s+)*"
+    r"(case\s+class|case\s+object|class|object|trait|enum)\s+"
+    r"([A-Za-z_$][\w$]*)",
+    re.MULTILINE,
+)
+
+
+def scan_scala_file(filepath: str | Path) -> list[ClassDef]:
+    """Parse a Scala file for type declarations using regex.
+
+    Handles class, case class, object, case object, trait and enum.
+    trait maps to kind 'interface'; everything else maps to 'class'.
+    All names in an 'extends X with Y with Z' chain become parents;
+    resolve_refs decides extends vs implements per target kind.
+    """
+    fp = Path(filepath)
+    try:
+        source = fp.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    results: list[ClassDef] = []
+
+    for m in _RE_SCALA_DECL.finditer(source):
+        keyword = m.group(1)
+        type_name = m.group(2)
+
+        header = _scala_decl_header(source, m.end())
+        # Strip type parameters ([T]) and constructor parameter lists.
+        header = _strip_bracketed(header, "[", "]")
+        header = _strip_bracketed(header, "(", ")")
+        # Scala 3 'derives' clauses list type classes, not parents.
+        header = re.split(r"\bderives\b", header)[0]
+
+        parents: list[str] = []
+        ext_match = re.search(r"\bextends\b(.*)", header, re.DOTALL)
+        if ext_match:
+            for part in re.split(r"\bwith\b", ext_match.group(1)):
+                name = part.strip().rstrip(":").strip()
+                if re.match(r"^[A-Za-z_$][\w$.]*$", name):
+                    parents.append(name)
+
+        results.append(ClassDef(
+            name=type_name,
+            kind="interface" if keyword == "trait" else "class",
+            parents=parents,
+            filepath=str(fp),
+            line=source.count("\n", 0, m.start()) + 1,
+            language="scala",
+        ))
+
+    return results
+
+
+def _decl_header(source: str, pos: int, limit: int = 2000) -> str:
+    """Return the declaration header text from *pos* up to the first
+    body brace or semicolon."""
+    end = min(len(source), pos + limit)
+    chunk = source[pos:end]
+    for stop in ("{", ";"):
+        idx = chunk.find(stop)
+        if idx != -1:
+            chunk = chunk[:idx]
+    return chunk
+
+
+def _scala_decl_header(source: str, pos: int, limit: int = 2000) -> str:
+    """Return a Scala declaration header from *pos*.
+
+    Scala types often have no body, so the header ends at the first
+    body brace or at a newline that is outside parens/brackets and is
+    not followed by a continuation keyword (extends / with / derives).
+    """
+    n = min(len(source), pos + limit)
+    depth = 0
+    i = pos
+    chars: list[str] = []
+    while i < n:
+        ch = source[i]
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        elif ch == "{":
+            break
+        elif ch == "\n" and depth <= 0:
+            j = i + 1
+            while j < n and source[j] in " \t":
+                j += 1
+            if not (
+                source.startswith("extends", j)
+                or source.startswith("with", j)
+                or source.startswith("derives", j)
+            ):
+                break
+        chars.append(ch)
+        i += 1
+    return "".join(chars)
+
+
+def _strip_bracketed(text: str, open_ch: str, close_ch: str) -> str:
+    """Remove all (possibly nested) bracketed segments from *text*.
+
+    ``_strip_bracketed('Foo<Map<K, V>> extends Bar', '<', '>')``
+    returns ``'Foo extends Bar'``.
+    """
+    out: list[str] = []
+    depth = 0
+    for ch in text:
+        if ch == open_ch:
+            depth += 1
+        elif ch == close_ch and depth > 0:
+            depth -= 1
+        elif depth == 0:
+            out.append(ch)
+    return "".join(out)
+
+
+def _split_type_list(raw: str) -> list[str]:
+    """Split a comma-separated type list, keeping only identifier-like
+    names (dotted names allowed). Generics must already be stripped."""
+    names: list[str] = []
+    for part in raw.split(","):
+        name = part.strip()
+        if re.match(r"^[A-Za-z_$][\w$.]*$", name):
+            names.append(name)
+    return names
 
 
 # ---------------------------------------------------------------------------

@@ -47,6 +47,7 @@ _MANIFEST_FILES = (
     "pom.xml",
     "build.gradle",
     "build.gradle.kts",
+    "build.sbt",
     "requirements.txt",
     "setup.py",
 )
@@ -69,7 +70,7 @@ def detect(directory: str | Path) -> DetectionResult:
       3. pyproject.toml / setup.py / requirements.txt -> python
       4. go.mod                 -> go
       5. Cargo.toml             -> rust
-      6. pom.xml / build.gradle / build.gradle.kts -> java/kotlin
+      6. pom.xml / build.gradle / build.gradle.kts / build.sbt -> java/scala/kotlin
       7. *.csproj / *.sln       -> csharp
 
     Within each language block, framework / test-framework / package-manager are
@@ -208,25 +209,76 @@ def detect(directory: str | Path) -> DetectionResult:
             framework = framework or "rocket"
 
     # ------------------------------------------------------------------
-    # Java / Kotlin
+    # Java / Scala / Kotlin (Maven, Gradle, sbt)
     # ------------------------------------------------------------------
     has_pom = (d / "pom.xml").is_file()
     has_gradle = (d / "build.gradle").is_file()
     has_gradle_kts = (d / "build.gradle.kts").is_file()
+    has_sbt = (d / "build.sbt").is_file()
 
-    if has_pom or has_gradle or has_gradle_kts:
-        if has_gradle_kts:
-            lang = lang or "kotlin"
-        else:
-            lang = lang or "java"
+    if has_pom or has_gradle or has_gradle_kts or has_sbt:
+        # Concatenate every build manifest that exists. Framework and
+        # test-framework detection greps this combined text.
+        manifest = ""
+        for mf in ("pom.xml", "build.gradle", "build.gradle.kts", "build.sbt"):
+            if (d / mf).is_file():
+                manifest += _read_text(d / mf)
 
-        if has_pom:
+        has_java_src = (d / "src" / "main" / "java").is_dir()
+        has_scala_src = (d / "src" / "main" / "scala").is_dir()
+
+        if has_sbt:
+            lang = lang or "scala"
+            pkg_mgr = pkg_mgr or "sbt"
+        elif has_pom:
+            lang = lang or ("scala" if has_scala_src else "java")
             pkg_mgr = pkg_mgr or "maven"
         else:
+            # Gradle build. Scala sources or the scala plugin win,
+            # then java sources, then kotlin for .kts builds.
+            if has_scala_src or "scala" in manifest:
+                lang = lang or "scala"
+            elif has_java_src:
+                lang = lang or "java"
+            elif has_gradle_kts:
+                lang = lang or "kotlin"
+            else:
+                lang = lang or "java"
             pkg_mgr = pkg_mgr or "gradle"
 
-        test_fw = test_fw or "junit"
-        framework = framework or "spring"
+        # Framework detection (first match wins)
+        _jvm_frameworks = (
+            ("spring-boot", "spring"),
+            ("springframework", "spring"),
+            ("quarkus", "quarkus"),
+            ("micronaut", "micronaut"),
+            ("playframework", "play"),
+            ("akka", "akka"),
+            ("spring", "spring"),
+        )
+        for needle, fw_name in _jvm_frameworks:
+            if needle in manifest:
+                framework = framework or fw_name
+                break
+
+        # Test framework detection. Scala runners are checked before
+        # junit because scala builds often pull in junit as well.
+        _jvm_test_frameworks = (
+            ("scalatest", "scalatest"),
+            ("munit", "munit"),
+            ("specs2", "specs2"),
+            ("testng", "testng"),
+            ("junit", "junit"),  # also matches junit-jupiter
+        )
+        for needle, tf_name in _jvm_test_frameworks:
+            if needle in manifest:
+                test_fw = test_fw or tf_name
+                break
+
+        # junit is the de-facto default for java/kotlin builds that do
+        # not declare a test dependency in the manifest we read.
+        if lang in ("java", "kotlin"):
+            test_fw = test_fw or "junit"
 
     # ------------------------------------------------------------------
     # C# / .NET
