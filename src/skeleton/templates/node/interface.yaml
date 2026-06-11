@@ -1,0 +1,19 @@
+---
+akemi: v1
+kind: interface
+id: iface-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: src/CHANGEME
+line: 1
+language: ""
+refs:
+  - { rel: part_of, to: mod-CHANGEME }
+  - { rel: extends, to: iface-CHANGEME }
+  - { rel: implemented_by, to: cls-CHANGEME }
+---
+Contract purpose: what behavior does this interface guarantee?
+Why does it exist (swappable backends, testing, etc.)?

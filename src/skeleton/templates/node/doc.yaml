@@ -1,0 +1,15 @@
+---
+akemi: v1
+kind: doc
+id: doc-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: docs/CHANGEME
+doc_type: reference
+refs:
+  - { rel: documents, to: mod-CHANGEME }
+---
+What this document covers and its intended audience.

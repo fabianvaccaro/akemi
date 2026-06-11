@@ -1,0 +1,14 @@
+---
+akemi: v1
+kind: domain
+id: dom-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+refs:
+  - { rel: contains, to: mod-CHANGEME }
+---
+Brief description of this business domain / bounded context.
+What capabilities does it own? What are its boundaries?

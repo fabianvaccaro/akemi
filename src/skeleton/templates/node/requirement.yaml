@@ -1,0 +1,17 @@
+---
+akemi: v1
+kind: requirement
+id: req-CHANGEME
+name: CHANGEME
+status: planned
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+priority: medium
+refs:
+  - { rel: part_of, to: dom-CHANGEME }
+  - { rel: addressed_by, to: adr-CHANGEME }
+  - { rel: implemented_by, to: mod-CHANGEME }
+---
+Requirement description. What the system must do and why.
+Acceptance criteria.

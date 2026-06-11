@@ -1,0 +1,17 @@
+---
+akemi: v1
+kind: test
+id: test-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: tests/CHANGEME
+test_type: unit
+framework: ""
+refs:
+  - { rel: tests, to: cls-CHANGEME }
+  - { rel: part_of, to: mod-CHANGEME }
+---
+What scenarios are covered and key assertions.

@@ -1,0 +1,75 @@
+---
+akemi: v1
+
+project:
+  name: ""
+  type: single              # "single" (default) or "monorepo"
+  language: ""
+  framework: ""
+  test_framework: ""
+  package_manager: ""
+
+agents:
+  active: [claude]
+  claude:
+    auto_sync: true
+    hooks: true
+  cursor:
+    auto_sync: false
+  aider:
+    auto_sync: false
+  windsurf:
+    auto_sync: false
+
+graph:
+  node_line_limit: 120
+  source_line_limit: 300
+  bootstrap_depth: tier2
+  id_prefixes:
+    domain: dom
+    module: mod
+    file: file
+    class: cls
+    interface: iface
+    function: fn
+    api: api
+    resource: res
+    requirement: req
+    adr: adr
+    technology: tech
+    test: test
+    doc: doc
+    config: cfg
+    epic: epic
+    story: story
+    task: task
+    bug: bug
+
+standards:
+  oop_default: true
+  min_test_coverage: 90
+  max_file_lines: 300
+  require_interfaces: true
+  naming:
+    files: kebab-case
+    classes: PascalCase
+    functions: camelCase
+    variables: camelCase
+    constants: UPPER_SNAKE_CASE
+
+# Uncomment for monorepo / multi-stack projects.
+# Each workspace maps a directory to its language stack.
+# When workspaces are defined, set project.type to "monorepo".
+# workspaces:
+#   backend:
+#     root: backend/
+#     language: python
+#     framework: fastapi
+#     test_framework: pytest
+#     package_manager: pip
+#   frontend:
+#     root: frontend/
+#     language: typescript
+#     framework: react
+#     test_framework: vitest
+#     package_manager: npm

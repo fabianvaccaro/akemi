@@ -1,0 +1,21 @@
+---
+akemi: v1
+kind: story
+id: story-CHANGEME
+name: CHANGEME
+status: planned
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+priority: medium
+points: null
+refs:
+  - { rel: part_of, to: epic-CHANGEME }
+  - { rel: breaks_into, to: task-CHANGEME }
+  - { rel: implemented_by, to: mod-CHANGEME }
+---
+As a [role], I want [capability] so that [benefit].
+
+Acceptance criteria:
+- [ ] Criterion 1
+- [ ] Criterion 2

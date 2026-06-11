@@ -1,0 +1,16 @@
+---
+akemi: v1
+kind: resource
+id: res-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+resource_type: database_table
+technology: ""
+refs:
+  - { rel: part_of, to: res-CHANGEME }
+  - { rel: consumed_by, to: cls-CHANGEME }
+---
+What this resource stores/provides and access patterns.

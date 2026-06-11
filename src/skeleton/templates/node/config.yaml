@@ -1,0 +1,15 @@
+---
+akemi: v1
+kind: config
+id: cfg-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: CHANGEME
+config_type: environment
+refs:
+  - { rel: configures, to: res-CHANGEME }
+---
+What this config controls. Never commit secrets.

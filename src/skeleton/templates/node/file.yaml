@@ -1,0 +1,18 @@
+---
+akemi: v1
+kind: file
+id: file-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: src/CHANGEME
+language: ""
+loc: 0
+refs:
+  - { rel: part_of, to: mod-CHANGEME }
+  - { rel: imports, to: file-CHANGEME }
+  - { rel: tested_by, to: test-CHANGEME }
+---
+Purpose of this file and key exports.

@@ -1,0 +1,20 @@
+---
+akemi: v1
+kind: function
+id: fn-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: src/CHANGEME
+line: 1
+language: ""
+signature: ""
+pure: true
+refs:
+  - { rel: part_of, to: file-CHANGEME }
+  - { rel: called_by, to: cls-CHANGEME }
+  - { rel: tested_by, to: test-CHANGEME }
+---
+What this function does and its key invariants.

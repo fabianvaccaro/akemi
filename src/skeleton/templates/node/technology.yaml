@@ -1,0 +1,15 @@
+---
+akemi: v1
+kind: technology
+id: tech-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+category: library
+version: ""
+refs:
+  - { rel: used_by, to: mod-CHANGEME }
+---
+What this technology is and why it was chosen for this project.

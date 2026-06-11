@@ -1,0 +1,18 @@
+---
+akemi: v1
+kind: task
+id: task-CHANGEME
+name: CHANGEME
+status: pending
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+priority: medium
+estimate: null
+assignee: null
+refs:
+  - { rel: part_of, to: story-CHANGEME }
+  - { rel: implemented_by, to: cls-CHANGEME }
+  - { rel: tested_by, to: test-CHANGEME }
+---
+What needs to be done and definition of done.

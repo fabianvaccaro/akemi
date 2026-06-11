@@ -1,0 +1,17 @@
+---
+akemi: v1
+kind: epic
+id: epic-CHANGEME
+name: CHANGEME
+status: planned
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+priority: high
+target_date: null
+refs:
+  - { rel: contains, to: story-CHANGEME }
+  - { rel: part_of, to: dom-CHANGEME }
+---
+Business objective this epic delivers.
+Success criteria and measurable outcomes.

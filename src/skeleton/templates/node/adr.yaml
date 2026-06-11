@@ -1,0 +1,24 @@
+---
+akemi: v1
+kind: adr
+id: adr-CHANGEME
+name: "ADR-NNN: CHANGEME"
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+decision_date: YYYY-MM-DD
+supersedes: null
+refs:
+  - { rel: addresses, to: req-CHANGEME }
+  - { rel: impacts, to: mod-CHANGEME }
+  - { rel: uses_technology, to: tech-CHANGEME }
+---
+## Context
+What problem or need prompted this decision?
+
+## Decision
+What was decided and why this option over alternatives?
+
+## Consequences
+What trade-offs result from this decision?

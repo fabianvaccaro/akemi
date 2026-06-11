@@ -1,0 +1,61 @@
+---
+# Journey Template - copy and fill in for each new journey
+# Schema: .akemi/journeys/SCHEMA.md
+
+id: journey-CHANGEME
+name: "CHANGEME"
+version: 1
+actor: analyst  # analyst | client | admin
+description: >
+  CHANGEME: What this journey covers end-to-end.
+
+states:
+  - id: s01-CHANGEME
+    name: "CHANGEME"
+    type: ui  # ui | system | background
+    page: frontend/src/pages/CHANGEME.tsx
+    graph_refs: [file-CHANGEME]
+    description: "CHANGEME"
+    reachable: true
+
+  - id: s02-CHANGEME-background
+    name: "CHANGEME Background Process"
+    type: background
+    graph_refs: [file-CHANGEME]
+    description: "CHANGEME: async processing (e.g., Celery task, pipeline step)"
+    reachable: true
+
+transitions:
+  - id: t01-CHANGEME
+    from: s01-CHANGEME
+    to: s02-CHANGEME-background
+    trigger:
+      type: user_action  # user_action | system_event | auto
+      ui_control: "CHANGEME button/link description"
+      component: frontend/src/components/CHANGEME.tsx
+      control_id: "CHANGEME"
+      graph_refs: [file-CHANGEME]
+    backend_process:
+      api_endpoint: "METHOD /path"
+      handler: backend/app/domains/CHANGEME.py
+      graph_refs: [file-CHANGEME]
+    condition: null
+
+error_paths:
+  - id: e01-CHANGEME
+    from: s01-CHANGEME
+    to: s01-CHANGEME
+    trigger:
+      type: system_event
+      event: "CHANGEME_error"
+    description: "CHANGEME"
+    recovery: "CHANGEME"
+
+branching_conditions:
+  - id: b01-CHANGEME
+    at_state: s01-CHANGEME
+    condition: "CHANGEME === true"
+    goto: s02-CHANGEME-background
+    else_goto: s03-CHANGEME
+    description: "CHANGEME"
+...

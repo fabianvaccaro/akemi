@@ -1,0 +1,21 @@
+---
+akemi: v1
+kind: class
+id: cls-CHANGEME
+name: CHANGEME
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+path: src/CHANGEME
+line: 1
+language: ""
+pattern: service
+refs:
+  - { rel: part_of, to: file-CHANGEME }
+  - { rel: extends, to: cls-CHANGEME }
+  - { rel: implements, to: iface-CHANGEME }
+  - { rel: depends_on, to: cls-CHANGEME }
+  - { rel: tested_by, to: test-CHANGEME }
+---
+What this class does, its responsibility, and DI dependencies.

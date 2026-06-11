@@ -1,0 +1,21 @@
+---
+akemi: v1
+kind: api
+id: api-CHANGEME
+name: METHOD /path
+status: active
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+method: GET
+path_pattern: /CHANGEME
+auth: bearer
+rate_limit: ""
+refs:
+  - { rel: provided_by, to: mod-CHANGEME }
+  - { rel: calls, to: cls-CHANGEME }
+  - { rel: consumes, to: res-CHANGEME }
+  - { rel: documented_by, to: doc-CHANGEME }
+  - { rel: tested_by, to: test-CHANGEME }
+---
+What this endpoint does, request/response shape, error cases.

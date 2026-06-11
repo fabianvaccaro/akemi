@@ -1,0 +1,22 @@
+---
+akemi: v1
+kind: bug
+id: bug-CHANGEME
+name: CHANGEME
+status: open
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+severity: medium
+reproducible: true
+refs:
+  - { rel: affects, to: cls-CHANGEME }
+  - { rel: fixed_by, to: task-CHANGEME }
+  - { rel: tested_by, to: test-CHANGEME }
+---
+Steps to reproduce:
+1. Step 1
+2. Step 2
+
+Expected: ...
+Actual: ...

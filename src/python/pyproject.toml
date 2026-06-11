@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "akemi"
+version = "0.2.0"
+description = "AI-friendly graph-based codebase documentation"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0,<7",
+]
+
+[project.optional-dependencies]
+# Better TypeScript/JavaScript scanning accuracy. Without this extra,
+# Python files use the stdlib ast module and TS/JS fall back to regex.
+parsers = [
+    "tree-sitter>=0.24,<1",
+    "tree-sitter-javascript>=0.23,<1",
+    "tree-sitter-typescript>=0.23,<1",
+]
+
+[tool.setuptools.packages.find]
+include = ["akemi*"]
