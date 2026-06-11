@@ -5,41 +5,37 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 user-invocable: true
 ---
 
-Update Akemi graph. Reflect recent code changes.
+Sync the graph with recent code changes. Run this after any edit session.
 
-## Process
+## Steps
 
-1. Read `.akemi/graph/index.yaml`. Get current state.
+1. If `.akemi/.index-stale` exists: `bash .akemi/scripts/rebuild-index.sh`.
+   Read `.akemi/graph/index.yaml` for current state. List changed files (`git status --short` or from context).
 
-2. For each file created:
-   - Pick node kind (file, class, interface, function, etc.)
-   - Gen ID: `<prefix>-<kebab-case-name>`
-   - Read template `.akemi/templates/node/<kind>.yaml`
-   - Fill: id, name, path, language, refs (part_of, extends, implements, etc.)
-   - Write `.akemi/graph/nodes/<kind>/<id>.yaml`
+2. Created files: pick the kind (file, class, interface, function, test, config), build the ID `<prefix>-<kebab-case-name>`, fill `.akemi/templates/node/<kind>.yaml` (id, name, path, language, refs: `part_of` module, `implements`, `extends`, `depends_on`, `uses_technology`), write to `.akemi/graph/nodes/<kind>/<id>.yaml`.
 
-3. For each file modified:
-   - Find node via index
-   - Update: loc, refs, updated date
-   - Node missing → create
+3. Modified files: find the node via the index path lookup; update refs to match real imports/deps and set `updated` to today. No node found: create one as in step 2.
 
-4. For each file deleted:
-   - Find node via index
-   - Set `status: deprecated` (do NOT delete node file)
+4. Moved/renamed files: update the node's `path`, keep the same ID.
 
-5. Update cross-refs in affected nodes (add/remove refs)
+5. Deleted files: set the node's `status: deprecated`. Never delete node files; never reuse the ID.
 
-6. Change affects user flow → update journey file
-   `.akemi/journeys/` (states, transitions, graph_refs, backend_processes)
+6. Fix cross-refs in affected nodes (add/remove `depends_on` etc.). Every `refs[].to` must exist in the index.
 
-7. Rebuild:
+7. Work item linkage: if the change completes a task, update the task node status; if a user flow changed, update the journey YAML in `.akemi/journeys/`.
+
+8. Rebuild and check:
    ```bash
    bash .akemi/scripts/rebuild-index.sh
    bash .akemi/scripts/rebuild-views.sh
+   bash .akemi/scripts/validate.sh
    ```
+   FAIL lines: fix the named node YAML, re-run, max 3 attempts, then report the remaining FAIL output verbatim and stop.
 
-8. Verify node files <120 lines
+## Rules
 
-## ID Prefixes
+- Never edit `index.yaml` or `views/*.md` by hand; they are generated from node files.
+- Node files under 120 lines; bodies WHY not WHAT.
+- Prefixes: dom, mod, file, cls, iface, fn, api, res, req, adr, tech, test, doc, cfg, epic, cap, feat, story, task, bug, pi, iter, obj.
 
-dom, mod, file, cls, iface, fn, api, res, req, adr, tech, test, doc, cfg
+Report one line: nodes created/updated/deprecated, validation result.

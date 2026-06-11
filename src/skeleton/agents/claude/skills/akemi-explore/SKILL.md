@@ -1,36 +1,34 @@
 ---
 name: akemi-explore
 description: "Navigate the Akemi graph to understand the codebase. Auto-invoked when understanding project architecture, finding related code, or tracing dependencies."
-tools: Read, Glob, Grep
+tools: Read, Glob, Grep, Bash
 user-invocable: false
 ---
 
-Navigate Akemi graph via three-tier pattern:
+Read the graph in tiers, cheapest first. Never read all node files.
 
-1. ALWAYS start with `.akemi/graph/views/architecture.md`
-   Domain/module map in ~20 lines.
+## Steps
 
-2. Find specific node:
-   Read `.akemi/graph/index.yaml`, search `nodes` map by name/path.
+1. If `.akemi/.index-stale` exists: `bash .akemi/scripts/rebuild-index.sh` before trusting the index.
 
-3. Node details:
-   Read `.akemi/graph/nodes/<kind>/<id>.yaml`
+2. Overview: read `.akemi/graph/views/architecture.md` (domain/module map, ~30 lines).
+   Other views by question:
+   - Work items / backlog state: `views/backlog.md`
+   - Test coverage gaps: `views/test-coverage.md`
+   - Endpoints: `views/api-surface.md`
+   - Stack and versions: `views/tech-stack.md`
+   - Coupling and cycles: `views/dependency-tree.md`
 
-4. User-facing feature → read journey:
-   Read `.akemi/journeys/journey-*.yaml` for state machine mapping
-   UI states, transitions, API calls, backend processes.
+3. Find a specific node: search `.akemi/graph/index.yaml` by name or path. The index uses short keys: `k`=kind, `n`=name, `p`=path, `s`=status, `r`=rel, `t`=target.
 
-5. NEVER read all node files. Use index.
+4. Trace dependencies: follow the `edges` adjacency list in the index from the start node. Inferred edges are marked `i: 1`.
 
-6. Trace dependency chain:
-   Read `edges` section in index.yaml for start node,
-   follow chain through adjacency list.
+5. Detail (rationale, contracts, acceptance criteria): read `.akemi/graph/nodes/<kind>/<id>.yaml` for the specific nodes only.
 
-7. Test coverage:
-   Read `.akemi/graph/views/test-coverage.md`
+6. User-facing flows: read the relevant `.akemi/journeys/journey-*.yaml` (UI states, transitions, API calls, backend processes).
 
-8. Full API surface:
-   Read `.akemi/graph/views/api-surface.md`
+## Failure Handling
 
-9. Tech stack:
-   Read `.akemi/graph/views/tech-stack.md`
+- `index.yaml` missing: the graph is not initialized; suggest `bash .akemi/scripts/bootstrap.sh` and stop.
+- A node referenced in the index has no file, or a view is missing: report it and suggest `/akemi-validate`; do not reconstruct generated files by hand.
+- Entity not in the graph at all: fall back to targeted Glob/Grep of the source, then note the missing node so it gets created.

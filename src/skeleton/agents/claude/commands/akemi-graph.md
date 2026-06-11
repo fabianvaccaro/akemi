@@ -2,39 +2,36 @@
 description: "Visualize the Akemi graph as text"
 ---
 
-Read `.akemi/graph/index.yaml`. Render graph as text diagram.
+Render the graph topology from `.akemi/graph/index.yaml`.
+If `.akemi/.index-stale` exists, run `bash .akemi/scripts/rebuild-index.sh` first.
+If `index.yaml` is missing, suggest `bash .akemi/scripts/bootstrap.sh` and stop.
 
-## Output Format
+If $ARGUMENTS contains a node ID, show only that node's 1-hop neighborhood
+(incoming and outgoing edges with rel names). Otherwise show the full topology:
 
 ```
 Domains & Modules:
   dom-identity
-    ├── mod-auth
-    │   ├── cls-auth-service (implements iface-auth-provider)
-    │   ├── cls-token-manager
-    │   └── fn-hash-password
-    └── mod-rbac
-        └── cls-role-service
-
-  dom-billing
-    └── mod-billing
-        ├── cls-billing-service
-        └── cls-invoice-generator
+    mod-auth
+      cls-auth-service (implements iface-auth-provider)
+      fn-hash-password
+    mod-rbac
+      cls-role-service
 
 Dependencies:
-  mod-auth ──depends_on──> mod-database
-  mod-billing ──depends_on──> mod-auth, mod-database
+  mod-auth --depends_on--> mod-database
+  mod-billing --depends_on--> mod-auth, mod-database
 
 APIs:
-  POST /auth/login (api-auth-login) ──provided_by──> mod-auth
-  GET /billing/plans (api-billing-plans) ──provided_by──> mod-billing
+  POST /auth/login (api-auth-login) --part_of--> mod-auth
 
 Resources:
   res-primary-db
-    ├── res-users-table
-    └── res-billing-table
+    res-users-table
+
+Backlog (if work item nodes exist):
+  epic-auth <--realizes-- cap-sso <--realizes-- feat-saml <--realizes-- story-saml-login
 ```
 
-Show full graph topology. Group by domains, modules, entities.
-Show key edges (dependencies, provides, consumes).
-If $ARGUMENTS has node ID, show only that node neighborhood (1 hop).
+Group by domain, then module. Show key edges (depends_on, implements, realizes).
+Mark deprecated nodes with `[deprecated]`. ASCII only.

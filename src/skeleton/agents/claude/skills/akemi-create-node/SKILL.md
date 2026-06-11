@@ -1,39 +1,39 @@
 ---
 name: akemi-create-node
 description: "Create a new Akemi graph node. Usage: /akemi-create-node <kind> <name>"
-tools: Read, Write, Glob
+tools: Read, Write, Glob, Bash
 user-invocable: true
 ---
 
-Create new graph node from template.
+Create a graph node from a template.
 
-## Process
+## Steps
 
-1. Parse $ARGUMENTS for `<kind>` and `<name>`
-   Kinds: domain, module, file, class, interface, function, api, resource, requirement, adr, technology, test, doc, config, epic, story, task, bug
+1. Parse $ARGUMENTS for `<kind>` and `<name>`. Kind -> prefix:
 
-2. Map kind→prefix:
-   domain=dom, module=mod, file=file, class=cls, interface=iface,
-   function=fn, api=api, resource=res, requirement=req, adr=adr,
-   technology=tech, test=test, doc=doc, config=cfg,
-   epic=epic, story=story, task=task, bug=bug
+   domain=dom, module=mod, file=file, class=cls, interface=iface, function=fn,
+   api=api, resource=res, requirement=req, adr=adr, technology=tech, test=test,
+   doc=doc, config=cfg, epic=epic, capability=cap, feature=feat, story=story,
+   task=task, bug=bug, pi=pi, iteration=iter, objective=obj
 
-3. Gen ID: `<prefix>-<kebab-case-name>`
+2. Build the ID: `<prefix>-<kebab-case-name>` (e.g. `cls-user-service`, `feat-sso-login`)
 
-4. Check `.akemi/graph/index.yaml`, verify ID unique
+3. If `.akemi/.index-stale` exists: `bash .akemi/scripts/rebuild-index.sh`.
+   Then check `.akemi/graph/index.yaml`: the ID must not already exist. If it does, stop and report the existing node.
 
-5. Read template `.akemi/templates/node/<kind>.yaml`
+4. Read the template `.akemi/templates/node/<kind>.yaml`. If the template file is missing, report the path and stop; do not invent a schema.
 
-6. Fill template:
-   - Replace CHANGEME with real values
-   - Set `created` + `updated` to today
-   - Ask user re: relationships to existing nodes
+5. Fill it in: replace every CHANGEME, set `created` and `updated` to today, remove ref lines that do not apply. Refs use canonical rels: part_of, extends, implements, depends_on, tests, realizes, planned_for, affects, supported_by, uses_technology. Every `refs[].to` must be an ID present in the index; ask the user when the right target is unclear.
 
-7. Write to `.akemi/graph/nodes/<kind>/<id>.yaml`
+   SAFe kinds: child `realizes` parent (cap->epic, feat->cap, story->feat); task `part_of` story; story `planned_for` iter-; iter `part_of` pi-; obj- `supported_by` feat-/story-.
 
-8. Verify file under 120 lines
+6. Write to `.akemi/graph/nodes/<kind>/<id>.yaml`. Keep it under 120 lines; body explains WHY, max 20 lines.
 
-9. Rebuild index:
+7. Rebuild and check:
    ```bash
    bash .akemi/scripts/rebuild-index.sh
+   bash .akemi/scripts/validate.sh
    ```
+   If validate prints FAIL lines naming your node, fix the YAML and re-run (max 3 attempts, then report the FAIL output verbatim).
+
+8. Report one line: node ID created, validation result.

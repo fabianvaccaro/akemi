@@ -1,41 +1,47 @@
 ---
 name: akemi-validate
-description: "Validate the Akemi graph for broken references, orphan nodes, line count violations, and missing coverage."
-tools: Read, Glob, Grep, Bash
+description: "Validate the Akemi graph and fix what fails. Checks references, orphans, stale paths, line counts, and coverage."
+tools: Read, Edit, Glob, Grep, Bash
 user-invocable: true
 ---
 
-Validate Akemi graph integrity.
+Run the validator and drive failures to zero.
 
-## Checks
+## Steps
 
-1. **Broken References**: All `refs[].to` in node files point to existing node IDs in index
+1. Run:
+   ```bash
+   bash .akemi/scripts/validate.sh
+   ```
+   The script prints one line per check: `PASS | ...`, `FAIL | ...`, or `WARN | ...`.
+   If the script itself is missing or exits with an error (not FAIL lines), report the exact command and stderr and stop; do not improvise checks by hand.
 
-2. **Orphan Nodes**: Find nodes with zero incoming AND zero outgoing refs (except domain nodes - top-level)
+2. All PASS: report "validation clean" and stop.
 
-3. **Stale Paths**: For file/class/function/test/doc/config nodes, verify `path` field points to existing file on disk
+## Fix Loop (max 3 attempts)
 
-4. **Line Count**: All node files under 120 lines
+For each FAIL line, fix the named nodes by editing their YAML under `.akemi/graph/nodes/` only. Never edit `index.yaml` or `views/*.md`: they are generated.
 
-5. **Missing Nodes**: Scan `src/` for files without graph nodes
+| FAIL | Fix |
+|------|-----|
+| Broken reference | Point `refs[].to` at an existing ID, or create the missing node from `.akemi/templates/node/` |
+| Orphan node | Add the real relationship (usually `part_of` its module/story), or `status: deprecated` if obsolete |
+| Stale path | Update the node's `path` to the file's new location; file truly gone: `status: deprecated` |
+| Line count > 120 | Trim the markdown body (keep WHY, cut WHAT) |
+| ID mismatch | Make the `id` field equal the filename without `.yaml` |
+| Missing nodes | Create nodes for the listed source files (see /akemi-update) |
+| Missing test refs | Route to Akemi-Tester; or add `tested_by` if the test exists |
 
-6. **Test Coverage**: Find class/function nodes without `tested_by` refs
-
-7. **Interface Compliance**: Find class nodes without `implements` refs
-
-8. **ID Consistency**: Node `id` field matches filename
-
-## Output Format
-
+After fixing, rebuild and re-run:
+```bash
+bash .akemi/scripts/rebuild-index.sh
+bash .akemi/scripts/validate.sh
 ```
-PASS  | Broken references: 0 found
-FAIL  | Orphan nodes: 3 found (cls-old-service, fn-unused, doc-draft)
-WARN  | Missing nodes: 5 source files without graph nodes
-PASS  | Line count: all nodes under 120 lines
-FAIL  | Test coverage: 4 classes without test refs
-WARN  | Interface compliance: 2 classes without interface refs
-```
 
-## After Validation
+Still FAIL after 3 attempts: stop. Report the remaining FAIL lines verbatim plus what you tried. Do not keep looping.
 
-Report results. FAIL items → suggest fixes. WARN items → note for future.
+## WARN Items
+
+Do not block on WARN. List them with the responsible agent (coverage -> Akemi-Tester, missing nodes -> Akemi-Documenter, interfaces -> Akemi-Developer).
+
+Report one line: checks passed/failed, nodes fixed, remaining issues.
