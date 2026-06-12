@@ -4,13 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "akemi"
-version = "0.3.0"
+version = "0.0.1"
 description = "AI-friendly graph-based codebase documentation"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
     "pyyaml>=6.0,<7",
 ]
+
+[project.scripts]
+akemi = "akemi.cli:main"
 
 [project.optional-dependencies]
 # Better TypeScript/JavaScript scanning accuracy. Without this extra,

@@ -3,7 +3,7 @@
 # Supports local and remote (SSH) installation.
 set -euo pipefail
 
-AKEMI_VERSION="0.3.0"
+AKEMI_VERSION="0.0.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 
@@ -121,12 +121,11 @@ install_local() {
   cp "$SKELETON_DIR/journeys/SCHEMA.md" "$project_dir/.akemi/journeys/SCHEMA.md"
   cp "$SKELETON_DIR/templates/journey-template.yaml" "$project_dir/.akemi/templates/journey-template.yaml"
 
-  # Scripts (thin bash wrappers)
-  cp "$SCRIPT_DIR/bootstrap.sh" "$project_dir/.akemi/scripts/bootstrap.sh"
-  cp "$SCRIPT_DIR/rebuild-index.sh" "$project_dir/.akemi/scripts/rebuild-index.sh"
-  cp "$SCRIPT_DIR/rebuild-views.sh" "$project_dir/.akemi/scripts/rebuild-views.sh"
-  cp "$SCRIPT_DIR/validate.sh" "$project_dir/.akemi/scripts/validate.sh"
-  cp "$SCRIPT_DIR/sync-claude.sh" "$project_dir/.akemi/scripts/sync-claude.sh"
+  # Scripts (thin wrappers, POSIX and Windows)
+  for script in bootstrap rebuild-index rebuild-views validate sync-claude; do
+    cp "$SCRIPT_DIR/${script}.sh" "$project_dir/.akemi/scripts/${script}.sh"
+    cp "$SCRIPT_DIR/${script}.cmd" "$project_dir/.akemi/scripts/${script}.cmd"
+  done
   chmod +x "$project_dir/.akemi/scripts/"*.sh
 
   # Python package
@@ -137,15 +136,27 @@ install_local() {
   cp "$python_src/pyproject.toml" "$python_dest/pyproject.toml"
   cp "$python_src/akemi/"*.py "$python_dest/akemi/"
 
-  # Python venv
+  # Python venv (bin/ on POSIX, Scripts/ when running under Git Bash on Windows)
   local venv_dir="$project_dir/.akemi/.venv"
-  if [[ ! -f "$venv_dir/bin/python" ]]; then
+  local venv_python=""
+  find_venv_python() {
+    local c
+    for c in "$venv_dir/bin/python" "$venv_dir/Scripts/python.exe"; do
+      [[ -x "$c" ]] && { echo "$c"; return 0; }
+    done
+    return 1
+  }
+  if ! venv_python="$(find_venv_python)"; then
     echo "  Creating Python virtual environment..."
-    python3 -m venv "$venv_dir"
-    "$venv_dir/bin/pip" install --quiet --upgrade pip
+    local boot_python
+    boot_python="$(command -v python3 || command -v python || command -v py)" \
+      || { echo "ERROR: no Python interpreter found (need python3 >= 3.10)" >&2; exit 1; }
+    "$boot_python" -m venv "$venv_dir"
+    venv_python="$(find_venv_python)"
+    "$venv_python" -m pip install --quiet --upgrade pip
   fi
   echo "  Installing Python dependencies..."
-  "$venv_dir/bin/pip" install --quiet "$python_dest/"
+  "$venv_python" -m pip install --quiet "$python_dest/"
 
   # Step 3: Agent integration
   echo "  Configuring ${AGENT} integration..."
@@ -233,8 +244,8 @@ BRIEFING
 }
 HOOKS
 
-      # Sync to .claude/
-      bash "$SCRIPT_DIR/sync-claude.sh" "$project_dir"
+      # Sync to .claude/ using the project venv just provisioned
+      "$venv_python" -m akemi sync-claude "$project_dir"
       ;;
     copilot)
       write_agent_briefing "$project_dir/.github/copilot-instructions.md"
@@ -273,7 +284,7 @@ HOOKS
     if [[ "$FORCE_MONOREPO" == "true" ]]; then
       export AKEMI_FORCE_MONOREPO=1
     fi
-    bash "$SCRIPT_DIR/bootstrap.sh" "$project_dir" "$DEPTH"
+    "$venv_python" -m akemi bootstrap "$project_dir" "$DEPTH"
   fi
 
   echo ""

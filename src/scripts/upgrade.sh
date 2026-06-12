@@ -4,7 +4,7 @@
 # Never deletes or modifies existing graph nodes.
 set -euo pipefail
 
-AKEMI_VERSION="0.3.0"
+AKEMI_VERSION="0.0.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 
@@ -35,11 +35,10 @@ done
 
 # Step 3: Update scripts (safe - replaces scripts, not data)
 echo "  Updating scripts..."
-cp "$SCRIPT_DIR/rebuild-index.sh" "$AKEMI_DIR/scripts/rebuild-index.sh"
-cp "$SCRIPT_DIR/rebuild-views.sh" "$AKEMI_DIR/scripts/rebuild-views.sh"
-cp "$SCRIPT_DIR/validate.sh" "$AKEMI_DIR/scripts/validate.sh"
-cp "$SCRIPT_DIR/sync-claude.sh" "$AKEMI_DIR/scripts/sync-claude.sh"
-cp "$SCRIPT_DIR/bootstrap.sh" "$AKEMI_DIR/scripts/bootstrap.sh"
+for script in bootstrap rebuild-index rebuild-views validate sync-claude; do
+  cp "$SCRIPT_DIR/${script}.sh" "$AKEMI_DIR/scripts/${script}.sh"
+  cp "$SCRIPT_DIR/${script}.cmd" "$AKEMI_DIR/scripts/${script}.cmd"
+done
 cp "$SCRIPT_DIR/upgrade.sh" "$AKEMI_DIR/scripts/upgrade.sh"
 # Legacy bash lib/ removed in 0.2.x: all logic lives in the Python package
 rm -rf "$AKEMI_DIR/scripts/lib"
@@ -54,14 +53,25 @@ cp "$PYTHON_SRC/pyproject.toml" "$PYTHON_DEST/pyproject.toml"
 cp "$PYTHON_SRC/akemi/"*.py "$PYTHON_DEST/akemi/"
 
 # Ensure venv exists and deps are current
+# (bin/ on POSIX, Scripts/ when running under Git Bash on Windows)
 VENV_DIR="$AKEMI_DIR/.venv"
-if [[ ! -f "$VENV_DIR/bin/python" ]]; then
+find_venv_python() {
+  local c
+  for c in "$VENV_DIR/bin/python" "$VENV_DIR/Scripts/python.exe"; do
+    [[ -x "$c" ]] && { echo "$c"; return 0; }
+  done
+  return 1
+}
+if ! VENV_PYTHON="$(find_venv_python)"; then
   echo "  Creating Python virtual environment..."
-  python3 -m venv "$VENV_DIR"
-  "$VENV_DIR/bin/pip" install --quiet --upgrade pip
+  BOOT_PYTHON="$(command -v python3 || command -v python || command -v py)" \
+    || { echo "ERROR: no Python interpreter found (need python3 >= 3.10)" >&2; exit 1; }
+  "$BOOT_PYTHON" -m venv "$VENV_DIR"
+  VENV_PYTHON="$(find_venv_python)"
+  "$VENV_PYTHON" -m pip install --quiet --upgrade pip
 fi
 echo "  Installing Python dependencies..."
-"$VENV_DIR/bin/pip" install --quiet --upgrade "$PYTHON_DEST/"
+"$VENV_PYTHON" -m pip install --quiet --upgrade "$PYTHON_DEST/"
 
 # Add venv to gitignore if not already
 if [[ -d "$PROJECT_ROOT/.git" ]]; then
@@ -108,9 +118,9 @@ for agent in "$SKELETON_DIR"/agents/claude/agents/*.md; do
   [[ -f "$agent" && "$agent" != *.original.md ]] && cp "$agent" "$AKEMI_DIR/agents/claude/agents/"
 done
 
-# Step 6: Sync to .claude/ directory
+# Step 6: Sync to .claude/ directory using the project venv just updated
 echo "  Syncing to .claude/..."
-bash "$SCRIPT_DIR/sync-claude.sh" "$PROJECT_ROOT"
+"$VENV_PYTHON" -m akemi sync-claude "$PROJECT_ROOT"
 
 # Step 7: Update akemi.yaml with new prefixes (additive only)
 echo "  Updating config..."
@@ -136,15 +146,13 @@ fi
 
 # Step 9: Rebuild index to recognize new kinds
 echo "  Rebuilding index..."
-bash "$SCRIPT_DIR/rebuild-index.sh" "$AKEMI_DIR"
+"$VENV_PYTHON" -m akemi rebuild-index "$AKEMI_DIR"
 
 echo "  Rebuilding views..."
-bash "$SCRIPT_DIR/rebuild-views.sh" "$AKEMI_DIR"
+"$VENV_PYTHON" -m akemi rebuild-views "$AKEMI_DIR"
 
 echo ""
 echo "==> Upgrade to v${AKEMI_VERSION} complete!"
-echo "    New: SAFe work item kinds (capability, feature, pi, iteration, objective)"
-echo "    New: backlog view and safe-scrum guideline"
-echo "    New: Java and Scala support (Maven, Gradle, sbt)"
-echo "    Updated: agent definitions with graph-first workflow and failure protocol"
+echo "    Updated: scripts, templates, guidelines, and agent definitions"
 echo "    Existing graph nodes: untouched"
+echo "    See CHANGELOG.md in the Akemi repository for details"

@@ -28,6 +28,10 @@ def main(argv: list[str] | None = None) -> None:
     p_val = sub.add_parser("validate", help="Validate graph integrity")
     p_val.add_argument("akemi_dir", nargs="?", default=".akemi", help="Akemi directory (default: .akemi)")
 
+    # sync-claude
+    p_sync = sub.add_parser("sync-claude", help="Sync Claude agent files into .claude/")
+    p_sync.add_argument("project_root", nargs="?", default=".", help="Project root (default: .)")
+
     args = parser.parse_args(argv)
 
     if args.command == "bootstrap":
@@ -49,3 +53,11 @@ def main(argv: list[str] | None = None) -> None:
         result = validate(args.akemi_dir)
         print(result.report())
         sys.exit(result.error_count)
+
+    elif args.command == "sync-claude":
+        from .sync_claude import sync_claude
+        try:
+            print(sync_claude(args.project_root))
+        except FileNotFoundError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
