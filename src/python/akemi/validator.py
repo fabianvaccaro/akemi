@@ -1,8 +1,8 @@
 """Graph integrity checks for Akemi.
 
-Replaces validate.sh with pure Python.  Runs nine validation checks
-against the node files, journey files, and the source tree, producing
-structured results matching the bash output format.
+Replaces validate.sh with pure Python.  Runs ten validation checks
+against the node files, journey files, run files, and the source tree,
+producing structured results matching the bash output format.
 """
 
 from __future__ import annotations
@@ -17,6 +17,51 @@ from . import yaml_io
 from .config import AkemiConfig
 from .node import NodeFile, read_all_nodes
 from .paths import SOURCE_EXTENSIONS, lang_ext
+
+
+# Directories and files excluded when scanning source roots.
+EXCLUDE_DIRS: frozenset[str] = frozenset({
+    "__pycache__", "node_modules", ".next", "dist", "build",
+    ".venv", "venv", ".git", ".mypy_cache", ".pytest_cache",
+    "egg-info",
+})
+EXCLUDE_FILES: frozenset[str] = frozenset({"__init__.py", "conftest.py"})
+
+
+def scan_roots(
+    akemi_dir: Path,
+    project_root: Path,
+) -> list[tuple[Path, frozenset[str]]]:
+    """Return the (root, extensions) pairs the graph is expected to track.
+
+    Reads workspace config when available, otherwise falls back to
+    ``src/`` for single-project repos. Shared by the validator (missing
+    node check) and the healer (move detection).
+    """
+    config_path = akemi_dir / "akemi.yaml"
+    roots: list[tuple[Path, frozenset[str]]] = []
+
+    if config_path.is_file():
+        cfg = AkemiConfig.from_file(config_path)
+        if cfg.is_monorepo and cfg.workspaces:
+            for ws_name, ws_cfg in cfg.workspaces.items():
+                ws_root = project_root / ws_cfg.root
+                # Build the set of extensions for this workspace's language.
+                ext = lang_ext(ws_cfg.language)
+                if ws_cfg.language == "typescript":
+                    ws_exts = frozenset({".ts", ".tsx"})
+                elif ws_cfg.language == "javascript":
+                    ws_exts = frozenset({".js", ".jsx"})
+                else:
+                    ws_exts = frozenset({f".{ext}"})
+                roots.append((ws_root, ws_exts))
+
+    if not roots:
+        src_dir = project_root / "src"
+        if src_dir.is_dir():
+            roots.append((src_dir, SOURCE_EXTENSIONS))
+
+    return roots
 
 
 @dataclass
@@ -85,6 +130,9 @@ def validate(akemi_dir: str | Path) -> ValidationResult:
          features should realize a capability or epic, and iterations
          should be part_of a PI (warnings only; skipped when the graph
          has no feature/story/pi nodes).
+      10. Run ledger -- orchestration run files under ``.akemi/runs/``
+          must reference existing node IDs and valid step IDs, with
+          recognized status values (skipped when no run files exist).
 
     Returns a :class:`ValidationResult` whose :attr:`error_count` can
     serve as a process exit code.
@@ -193,52 +241,18 @@ def validate(akemi_dir: str | Path) -> ValidationResult:
         if node.kind in _PATH_KINDS and node.path:
             declared_paths.add(node.path)
 
-    # Directories and files to exclude when scanning workspace roots.
-    _EXCLUDE_DIRS = frozenset({
-        "__pycache__", "node_modules", ".next", "dist", "build",
-        ".venv", "venv", ".git", ".mypy_cache", ".pytest_cache",
-        "egg-info",
-    })
-    _EXCLUDE_FILES = frozenset({"__init__.py", "conftest.py"})
-
-    # Determine scan roots: read workspace config if available,
-    # otherwise fall back to src/ for single-project repos.
-    config_path = akemi_dir / "akemi.yaml"
-    scan_roots: list[tuple[Path, frozenset[str]]] = []
-
-    if config_path.is_file():
-        cfg = AkemiConfig.from_file(config_path)
-        if cfg.is_monorepo and cfg.workspaces:
-            for ws_name, ws_cfg in cfg.workspaces.items():
-                ws_root = project_root / ws_cfg.root
-                # Build the set of extensions for this workspace's language.
-                ext = lang_ext(ws_cfg.language)
-                if ws_cfg.language == "typescript":
-                    ws_exts = frozenset({".ts", ".tsx"})
-                elif ws_cfg.language == "javascript":
-                    ws_exts = frozenset({".js", ".jsx"})
-                else:
-                    ws_exts = frozenset({f".{ext}"})
-                scan_roots.append((ws_root, ws_exts))
-
-    # Fallback for single-project repos.
-    if not scan_roots:
-        src_dir = project_root / "src"
-        if src_dir.is_dir():
-            scan_roots.append((src_dir, SOURCE_EXTENSIONS))
-
     missing_count = 0
-    for root_path, exts in scan_roots:
+    for root_path, exts in scan_roots(akemi_dir, project_root):
         if not root_path.is_dir():
             continue
         for source_file in sorted(root_path.rglob("*")):
             if not source_file.is_file():
                 continue
             # Skip excluded directories anywhere in the path.
-            if _EXCLUDE_DIRS & set(source_file.parts):
+            if EXCLUDE_DIRS & set(source_file.parts):
                 continue
             # Skip excluded filenames.
-            if source_file.name in _EXCLUDE_FILES:
+            if source_file.name in EXCLUDE_FILES:
                 continue
             if source_file.suffix not in exts:
                 continue
@@ -319,7 +333,112 @@ def validate(akemi_dir: str | Path) -> ValidationResult:
     # ------------------------------------------------------------------
     _check_safe_hierarchy(nodes, result)
 
+    # ------------------------------------------------------------------
+    # 10. Run ledger validation
+    # ------------------------------------------------------------------
+    _check_run_files(akemi_dir, all_ids, result)
+
     return result
+
+
+_RUN_STATUSES = frozenset({"open", "in_progress", "blocked", "done", "abandoned"})
+_STEP_STATUSES = frozenset(
+    {"pending", "in_progress", "done", "failed", "blocked", "verified"}
+)
+
+
+def _check_run_files(
+    akemi_dir: Path,
+    all_ids: set[str],
+    result: ValidationResult,
+) -> None:
+    """Check 10: orchestration run files under ``.akemi/runs/``.
+
+    Failures: graph_refs, step inputs, and handoff nodes that point at
+    unknown node IDs; step depends_on that points at unknown step IDs.
+    Warnings: unknown status values, verified steps with no
+    verification block, runs marked done with unfinished steps.
+    """
+    runs_dir = akemi_dir / "runs"
+    run_files = sorted(runs_dir.glob("run-*.yaml")) if runs_dir.is_dir() else []
+    if not run_files:
+        result.passes.append("Run ledger: no run files found (skipped)")
+        return
+
+    broken = 0
+    for run_file in run_files:
+        try:
+            raw = yaml_io.safe_load(run_file.read_text(encoding="utf-8"))
+        except Exception:
+            result.warnings.append(f"Run parse error: {run_file.name}")
+            continue
+        if not isinstance(raw, dict):
+            result.warnings.append(
+                f"Run parse error: {run_file.name} (empty or invalid)"
+            )
+            continue
+
+        rid = raw.get("id", run_file.stem)
+        run_status = str(raw.get("status", ""))
+        if run_status and run_status not in _RUN_STATUSES:
+            result.warnings.append(
+                f"Run status: {rid} has unknown status '{run_status}'"
+            )
+
+        for ref in raw.get("graph_refs") or []:
+            if ref not in all_ids:
+                result.failures.append(f"Run broken ref: {rid} -> {ref}")
+                broken += 1
+
+        steps = raw.get("steps") or []
+        step_ids = {s.get("id") for s in steps if isinstance(s, dict)}
+        unfinished = 0
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            sid = step.get("id", "?")
+            status = str(step.get("status", ""))
+            if status and status not in _STEP_STATUSES:
+                result.warnings.append(
+                    f"Run step status: {rid} step {sid} has unknown "
+                    f"status '{status}'"
+                )
+            if status not in ("done", "verified"):
+                unfinished += 1
+            if status == "verified" and not step.get("verification"):
+                result.warnings.append(
+                    f"Run step unverified: {rid} step {sid} is marked "
+                    "verified but has no verification block"
+                )
+            for dep in step.get("depends_on") or []:
+                if dep not in step_ids:
+                    result.failures.append(
+                        f"Run broken step dep: {rid} step {sid} "
+                        f"depends_on {dep} (no such step)"
+                    )
+                    broken += 1
+            for ref in step.get("inputs") or []:
+                if ref not in all_ids:
+                    result.failures.append(
+                        f"Run broken ref: {rid} step {sid} input -> {ref}"
+                    )
+                    broken += 1
+            handoff = step.get("handoff") or {}
+            for ref in handoff.get("nodes") or []:
+                if ref not in all_ids:
+                    result.failures.append(
+                        f"Run broken ref: {rid} step {sid} handoff -> {ref}"
+                    )
+                    broken += 1
+
+        if run_status == "done" and unfinished:
+            result.warnings.append(
+                f"Run incomplete: {rid} is done but {unfinished} steps "
+                "are not done or verified"
+            )
+
+    if broken == 0:
+        result.passes.append("Run ledger: all run files valid")
 
 
 # Maps a work-item kind to its ID prefix, used to resolve refs whose

@@ -28,6 +28,7 @@ Never edit `index.yaml` or `views/*.md` by hand: they are generated. Edit node Y
 | `bash .akemi/scripts/rebuild-index.sh` | Regenerate index.yaml from node files |
 | `bash .akemi/scripts/rebuild-views.sh` | Regenerate views (architecture, backlog, api-surface, test-coverage, tech-stack, dependency-tree) |
 | `bash .akemi/scripts/validate.sh` | Check graph integrity, prints PASS/FAIL/WARN lines |
+| `bash .akemi/scripts/heal.sh` | Fix mechanical issues: ID mismatches, moved paths, deleted files (`--dry-run` to preview) |
 | `bash .akemi/scripts/bootstrap.sh` | Initialize graph from existing code |
 | `bash .akemi/scripts/sync-claude.sh` | Sync agent definitions into .claude/ |
 
@@ -63,7 +64,8 @@ Never code without a task or story node. Details: `.akemi/guidelines/safe-scrum.
 
 | Work | Agent |
 |------|-------|
-| Multi-step or unclear tasks | Akemi-Orchestrator (decomposes, delegates) |
+| Multi-step or unclear tasks | Akemi-Orchestrator (decomposes, delegates, run ledger) |
+| Verifying plans, proposals, nodes, code, run steps | Akemi-Auditor (independent verification) |
 | Architecture, module boundaries, ADRs | Akemi-Architect |
 | Backlog: epics, capabilities, features, stories, PI/iteration planning | Akemi-Planner |
 | Writing or modifying code | Akemi-Developer |
@@ -76,9 +78,18 @@ Never code without a task or story node. Details: `.akemi/guidelines/safe-scrum.
 | Database schema, migrations | Akemi-DBA |
 | API design, endpoint contracts | Akemi-API |
 
+## Orchestrated Runs (A2A)
+
+Multi-step work is coordinated through run files at `.akemi/runs/run-<slug>.yaml`
+(schema: `.akemi/runs/SCHEMA.md`). The run file records steps, agent handoffs, and
+verification verdicts; it is the only agent-to-agent channel that survives session
+loss. Agents write their own step's `handoff`; only Akemi-Auditor writes
+`verification`; a step counts as complete at `verified`, not `done`. Start or
+resume with `/akemi-run`.
+
 ## Failure Protocol
 
-- `validate.sh` fails: read the FAIL lines, fix the named node YAML files, re-run. Max 3 attempts, then report the remaining FAIL output verbatim and stop. Do not loop.
+- `validate.sh` fails: run `bash .akemi/scripts/heal.sh` first (fixes mechanical issues deterministically), then read the remaining FAIL lines, fix the named node YAML files, re-run. Max 3 attempts, then report the remaining FAIL output verbatim and stop. Do not loop.
 - A script is missing or errors: report the exact command and its stderr. Do not improvise an alternative.
 - A referenced node ID does not exist: create the node or fix the ref. Never invent IDs.
 
@@ -100,6 +111,7 @@ java, scala, etc.), not the root defaults. Maven/Gradle/sbt modules count as wor
 
 `/akemi-status` (graph health), `/akemi-graph` (topology), `/akemi-backlog` (work item summary),
 `/akemi-plan` (PI/iteration planning), `/akemi-propose` (self-verified design proposal),
+`/akemi-run` (orchestrated run with verification), `/akemi-audit` (self-healing audit),
 `/akemi-create-node`, `/akemi-scaffold`, `/akemi-validate`, `/akemi-update`.
 
 End every task with one line summarizing graph changes: nodes created/updated and validation result.

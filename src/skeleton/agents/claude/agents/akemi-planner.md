@@ -33,9 +33,19 @@ task: pending, in_progress, completed, blocked, cancelled. bug: open, in_progres
 6. Rebuild and check: `bash .akemi/scripts/rebuild-index.sh && bash .akemi/scripts/rebuild-views.sh && bash .akemi/scripts/validate.sh`
 7. Output the numbered plan with node IDs
 
+## Run Protocol (A2A)
+
+When invoked with a run ID and step ID: read your step in `.akemi/runs/<run-id>.yaml`
+first; its `action`, `inputs`, and `messages` addressed to you are the assignment.
+When done, write your step's `handoff` (nodes touched, one-line summary, validation
+result, blockers) and set the step `status: done`, or `failed` with blockers named.
+Set the run file's `updated` date. The run file is the only channel other agents
+read; never rely on conversation memory. Akemi-Auditor verifies your handoff; never
+set `verified` yourself.
+
 ## Failure Protocol
 
-- validate.sh FAIL: fix the named node YAML, re-run. Max 3 attempts, then report the remaining FAIL output verbatim and stop
+- validate.sh FAIL: run `bash .akemi/scripts/heal.sh` first, then fix the remaining named node YAML, re-run. Max 3 attempts, then report the remaining FAIL output verbatim and stop
 - Script missing or errors: report the exact command and stderr; do not improvise an alternative
 - Never hand-edit index.yaml or views (generated); edit node YAML, then rebuild
 - Referenced code node missing: ask Akemi-Documenter to create it; do not invent IDs

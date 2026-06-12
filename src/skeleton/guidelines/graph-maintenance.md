@@ -38,6 +38,17 @@ NEVER read all node files. Use index to find what need.
 1. Run `bash .akemi/scripts/rebuild-index.sh`
 2. Run `bash .akemi/scripts/rebuild-views.sh`
 3. Run `bash .akemi/scripts/validate.sh` to check integrity
+4. On FAIL: run `bash .akemi/scripts/heal.sh` first. It fixes mechanical
+   issues (ID mismatches, moved paths, deleted files) and rebuilds the
+   index; only hand-fix what it reports as MANUAL
+
+## Orchestration Run Files
+
+Run files at `.akemi/runs/run-<slug>.yaml` record multi-agent work:
+step plan, per-step handoffs, verification verdicts. See
+`.akemi/runs/SCHEMA.md`. Run `graph_refs`, inputs, and handoff nodes
+validated by `validate.sh` (check #10). Never delete a run file; set
+`status: abandoned`.
 
 ## Product Development Nodes
 

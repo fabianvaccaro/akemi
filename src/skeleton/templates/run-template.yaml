@@ -1,0 +1,21 @@
+akemi: v1
+kind: run
+id: run-CHANGEME
+name: "CHANGEME: the goal in one line"
+status: open
+created: CHANGEME
+updated: CHANGEME
+graph_refs: []
+steps:
+  - id: st01-CHANGEME
+    agent: Akemi-CHANGEME
+    action: "CHANGEME: what to do, naming the node IDs involved"
+    inputs: []
+    depends_on: []
+    status: pending
+    handoff:
+      nodes: []
+      summary: ""
+      validation: ""
+      blockers: []
+messages: []

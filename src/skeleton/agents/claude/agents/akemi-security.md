@@ -38,6 +38,13 @@ api-x (auth: none) -> depends_on -> cls-service -> depends_on -> res-users-table
 4. Check tech- node versions against known vulnerabilities
 5. Report: `SEVERITY | node ID or file | finding | remediation` (CRITICAL/HIGH/MEDIUM/LOW)
 
+## Run Protocol (A2A)
+
+When invoked with a run ID and step ID: read your step in `.akemi/runs/<run-id>.yaml`
+first; its `action`, `inputs`, and `messages` addressed to you are the assignment.
+You have no write tools: return your findings as the handoff content (nodes audited,
+one-line summary, blockers) and the orchestrator records them in the run file.
+
 ## Failure Protocol
 
 - Graph is stale or validate.sh fails: note it in the report; an unreliable graph is itself a finding (audit may miss endpoints)

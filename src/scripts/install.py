@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-AKEMI_VERSION = "0.1.0"
+AKEMI_VERSION = "0.2.0"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKELETON_DIR = SCRIPT_DIR.parent / "skeleton"
@@ -33,7 +33,7 @@ VIEWS = ["architecture", "api-surface", "test-coverage", "dependency-tree",
 GUIDELINES = ["coding-standards", "testing-standards", "documentation-standards",
               "graph-maintenance", "ai-friendly", "safe-scrum"]
 SHELL_SCRIPTS = ["bootstrap", "rebuild-index", "rebuild-views", "validate",
-                 "sync-claude"]
+                 "heal", "sync-claude"]
 AGENTS = ["claude", "copilot", "codex", "gemini", "cursor", "aider"]
 
 BRIEFING = """<!-- akemi -->
@@ -117,7 +117,7 @@ def install_local(project_dir: Path, agent: str, depth: str,
                 "agents/claude/rules", "agents/claude/skills",
                 "agents/claude/commands", "agents/claude/agents",
                 "agents/cursor", "agents/aider", "agents/windsurf",
-                "scripts", "journeys", "designs"):
+                "scripts", "journeys", "runs", "designs"):
         (akemi_dir / Path(sub)).mkdir(parents=True, exist_ok=True)
 
     # Step 2: Copy skeleton files
@@ -138,6 +138,10 @@ def install_local(project_dir: Path, agent: str, depth: str,
                  akemi_dir / "journeys" / "SCHEMA.md")
     shutil.copy2(SKELETON_DIR / "templates" / "journey-template.yaml",
                  akemi_dir / "templates" / "journey-template.yaml")
+    shutil.copy2(SKELETON_DIR / "runs" / "SCHEMA.md",
+                 akemi_dir / "runs" / "SCHEMA.md")
+    shutil.copy2(SKELETON_DIR / "templates" / "run-template.yaml",
+                 akemi_dir / "templates" / "run-template.yaml")
 
     # Scripts (thin wrappers, POSIX and Windows)
     for name in SHELL_SCRIPTS:

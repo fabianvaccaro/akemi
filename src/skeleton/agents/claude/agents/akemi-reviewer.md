@@ -42,6 +42,13 @@ Testing:
 Severities: BLOCKER (missing node, missing tests, >300 lines, no interface, cycle, secret),
 WARNING (drifting refs, naming), SUGGESTION (improvements).
 
+## Run Protocol (A2A)
+
+When invoked with a run ID and step ID: read your step in `.akemi/runs/<run-id>.yaml`
+first; its `action`, `inputs`, and `messages` addressed to you are the assignment.
+You have no write tools: return your findings as the handoff content (nodes reviewed,
+one-line summary, blockers) and the orchestrator records them in the run file.
+
 ## Failure Protocol
 
 - validate.sh errors (not FAIL lines, the script itself): report the exact command and stderr; do not improvise an alternative

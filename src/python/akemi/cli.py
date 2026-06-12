@@ -28,6 +28,11 @@ def main(argv: list[str] | None = None) -> None:
     p_val = sub.add_parser("validate", help="Validate graph integrity")
     p_val.add_argument("akemi_dir", nargs="?", default=".akemi", help="Akemi directory (default: .akemi)")
 
+    # heal
+    p_heal = sub.add_parser("heal", help="Fix mechanical graph issues (IDs, stale paths)")
+    p_heal.add_argument("akemi_dir", nargs="?", default=".akemi", help="Akemi directory (default: .akemi)")
+    p_heal.add_argument("--dry-run", action="store_true", help="Report fixes without writing")
+
     # sync-claude
     p_sync = sub.add_parser("sync-claude", help="Sync Claude agent files into .claude/")
     p_sync.add_argument("project_root", nargs="?", default=".", help="Project root (default: .)")
@@ -53,6 +58,12 @@ def main(argv: list[str] | None = None) -> None:
         result = validate(args.akemi_dir)
         print(result.report())
         sys.exit(result.error_count)
+
+    elif args.command == "heal":
+        from .healer import heal
+        result = heal(args.akemi_dir, dry_run=args.dry_run)
+        print(result.report())
+        sys.exit(result.manual_count)
 
     elif args.command == "sync-claude":
         from .sync_claude import sync_claude

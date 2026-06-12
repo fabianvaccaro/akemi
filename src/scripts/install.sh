@@ -3,7 +3,7 @@
 # Supports local and remote (SSH) installation.
 set -euo pipefail
 
-AKEMI_VERSION="0.1.0"
+AKEMI_VERSION="0.2.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 
@@ -88,7 +88,7 @@ install_local() {
 
   # Step 1: Create directory structure
   echo "  Creating .akemi/ structure..."
-  mkdir -p "$project_dir/.akemi"/{graph/{nodes/{domain,module,file,class,interface,function,api,resource,requirement,adr,technology,test,doc,config,epic,story,task,bug,capability,feature,pi,iteration,objective},views},guidelines,templates/{node,code},agents/{claude/{rules,skills,commands,agents},cursor,aider,windsurf},scripts,journeys,designs}
+  mkdir -p "$project_dir/.akemi"/{graph/{nodes/{domain,module,file,class,interface,function,api,resource,requirement,adr,technology,test,doc,config,epic,story,task,bug,capability,feature,pi,iteration,objective},views},guidelines,templates/{node,code},agents/{claude/{rules,skills,commands,agents},cursor,aider,windsurf},scripts,journeys,runs,designs}
 
   # Step 2: Copy skeleton files
   echo "  Installing skeleton files..."
@@ -121,8 +121,12 @@ install_local() {
   cp "$SKELETON_DIR/journeys/SCHEMA.md" "$project_dir/.akemi/journeys/SCHEMA.md"
   cp "$SKELETON_DIR/templates/journey-template.yaml" "$project_dir/.akemi/templates/journey-template.yaml"
 
+  # Run ledger schema and template
+  cp "$SKELETON_DIR/runs/SCHEMA.md" "$project_dir/.akemi/runs/SCHEMA.md"
+  cp "$SKELETON_DIR/templates/run-template.yaml" "$project_dir/.akemi/templates/run-template.yaml"
+
   # Scripts (thin wrappers, POSIX and Windows)
-  for script in bootstrap rebuild-index rebuild-views validate sync-claude; do
+  for script in bootstrap rebuild-index rebuild-views validate heal sync-claude; do
     cp "$SCRIPT_DIR/${script}.sh" "$project_dir/.akemi/scripts/${script}.sh"
     cp "$SCRIPT_DIR/${script}.cmd" "$project_dir/.akemi/scripts/${script}.cmd"
   done

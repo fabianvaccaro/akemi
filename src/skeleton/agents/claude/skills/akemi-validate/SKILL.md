@@ -9,10 +9,13 @@ Run the validator and drive failures to zero.
 
 ## Steps
 
-1. Run:
+1. Heal the mechanical layer first, then validate:
    ```bash
+   bash .akemi/scripts/heal.sh
    bash .akemi/scripts/validate.sh
    ```
+   Heal fixes ID mismatches, repoints moved files, deprecates nodes for deleted
+   files, and rebuilds the index; its MANUAL lines need the fix loop below.
    The script prints one line per check: `PASS | ...`, `FAIL | ...`, or `WARN | ...`.
    If the script itself is missing or exits with an error (not FAIL lines), report the exact command and stderr and stop; do not improvise checks by hand.
 

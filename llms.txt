@@ -1,0 +1,27 @@
+# Akemi
+
+> Graph-based codebase documentation for AI coding agents. Akemi stores the structure of a software project as a knowledge graph of plain YAML files committed inside the repository, with no database and no server, so agents like Claude Code, GitHub Copilot, Codex CLI, and Gemini CLI can load accurate context in one read instead of re-exploring the codebase on every task.
+
+Key facts:
+
+- A scanner walks the codebase and turns modules, files, classes, functions, and APIs into YAML nodes under `.akemi/graph/nodes/`, connected by typed relations.
+- An index file (`.akemi/graph/index.yaml`) maps every source path to its node, so an agent finds context in a single read.
+- Generated markdown views (architecture, api-surface, dependency-tree, tech-stack, backlog) summarize the graph for humans and agents.
+- A validator checks node schemas, relation targets, index freshness, and orchestration run files, keeping the graph honest as code changes.
+- A healer (`akemi heal`) deterministically fixes mechanical graph issues: node IDs that drifted from filenames, paths to moved or deleted files, and refs broken by renames.
+- Multi-agent work is coordinated through a run ledger: plain YAML run files under `.akemi/runs/` record step plans, agent handoffs, and independent verification verdicts, surviving session loss.
+- The graph is plain text in git: versioned, diffable, and reviewable. Nothing to host, nothing to sync.
+- Single required runtime dependency: PyYAML. Python 3.10+. Works on Windows, macOS, and Linux.
+- The same graph carries requirements, architecture decision records (ADRs), and SAFe work items (epics, capabilities, features, stories, tasks, bugs), so agents can walk from a user story to the exact functions it touches.
+- Supported languages: Python (stdlib ast), TypeScript and JavaScript (regex by default, tree-sitter via the optional `parsers` extra), Java and Scala (build-file detection plus regex scanners).
+- Agent integrations: Claude Code (rules, skills, slash commands, subagents, hooks), GitHub Copilot, Codex CLI, and Gemini CLI (graph-first instruction blocks).
+- License: MIT. All dependencies are permissively licensed; no copyleft.
+
+Installation: clone the repository and run `./src/scripts/install.sh /path/to/project` (POSIX) or `python src\scripts\install.py C:\path\to\project` (Windows). An AI coding agent can also perform the install: start the agent inside the Akemi clone and ask it to read AGENTS.md and install Akemi into the target project.
+
+## Documentation
+
+- [README](https://github.com/fabianvaccaro/akemi/blob/main/README.md): overview, installation, agent setup, daily use, prompting guide, node kinds
+- [AGENTS.md](https://github.com/fabianvaccaro/akemi/blob/main/AGENTS.md): step-by-step instructions for AI agents installing Akemi into a project, including multi-agent setup
+- [CONTRIBUTING](https://github.com/fabianvaccaro/akemi/blob/main/CONTRIBUTING.md): branch naming, commit conventions, versioning, release process
+- [CHANGELOG](https://github.com/fabianvaccaro/akemi/blob/main/CHANGELOG.md): release history

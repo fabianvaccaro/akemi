@@ -1,7 +1,7 @@
 {
   "name": "akemi",
-  "version": "0.1.0",
-  "description": "AI agent for graph-based codebase documentation and development lifecycle management",
+  "version": "0.2.0",
+  "description": "Graph-based codebase documentation for AI coding agents. A plain YAML knowledge graph committed inside the repository, with no database and no server, read by Claude Code, GitHub Copilot, Codex CLI, and Gemini CLI.",
   "bin": {
     "akemi": "./src/scripts/install.sh"
   },
@@ -11,6 +11,6 @@
     "rebuild-index": "bash src/scripts/rebuild-index.sh",
     "rebuild-views": "bash src/scripts/rebuild-views.sh"
   },
-  "keywords": ["ai", "documentation", "graph", "codebase", "claude", "agent"],
+  "keywords": ["ai", "documentation", "knowledge-graph", "codebase", "claude-code", "copilot", "gemini", "codex", "coding-agent", "llm", "context", "yaml", "developer-tools", "adr", "safe"],
   "license": "MIT"
 }

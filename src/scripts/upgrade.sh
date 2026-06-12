@@ -4,7 +4,7 @@
 # Never deletes or modifies existing graph nodes.
 set -euo pipefail
 
-AKEMI_VERSION="0.1.0"
+AKEMI_VERSION="0.2.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 
@@ -25,6 +25,7 @@ for kind in epic story task bug capability feature pi iteration objective; do
   mkdir -p "$AKEMI_DIR/graph/nodes/$kind"
 done
 mkdir -p "$AKEMI_DIR/journeys"
+mkdir -p "$AKEMI_DIR/runs"
 mkdir -p "$AKEMI_DIR/designs"
 
 # Step 2: Copy new templates (safe - only adds, doesn't overwrite existing node files)
@@ -35,7 +36,7 @@ done
 
 # Step 3: Update scripts (safe - replaces scripts, not data)
 echo "  Updating scripts..."
-for script in bootstrap rebuild-index rebuild-views validate sync-claude; do
+for script in bootstrap rebuild-index rebuild-views validate heal sync-claude; do
   cp "$SCRIPT_DIR/${script}.sh" "$AKEMI_DIR/scripts/${script}.sh"
   cp "$SCRIPT_DIR/${script}.cmd" "$AKEMI_DIR/scripts/${script}.cmd"
 done
@@ -87,6 +88,11 @@ fi
 echo "  Updating journey schema and template..."
 cp "$SKELETON_DIR/journeys/SCHEMA.md" "$AKEMI_DIR/journeys/SCHEMA.md"
 cp "$SKELETON_DIR/templates/journey-template.yaml" "$AKEMI_DIR/templates/journey-template.yaml"
+
+# Step 3d: Update run ledger schema and template
+echo "  Updating run ledger schema and template..."
+cp "$SKELETON_DIR/runs/SCHEMA.md" "$AKEMI_DIR/runs/SCHEMA.md"
+cp "$SKELETON_DIR/templates/run-template.yaml" "$AKEMI_DIR/templates/run-template.yaml"
 
 # Step 4: Update guidelines (safe - overwrites guidelines, not user content)
 echo "  Updating guidelines..."
