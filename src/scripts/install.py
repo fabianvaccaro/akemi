@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-AKEMI_VERSION = "0.0.1"
+AKEMI_VERSION = "0.1.0"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKELETON_DIR = SCRIPT_DIR.parent / "skeleton"

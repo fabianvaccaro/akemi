@@ -5,10 +5,13 @@ All notable changes to Akemi are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0] - 2026-06-12
 
 ### Added
 
+- Release automation: pushing a `v*` tag now checks that all version files
+  agree with the tag and creates the GitHub release with the matching
+  changelog section as the release notes.
 - `akemi-propose` Claude Code skill: staged design proposal workflow with
   graph research, architecture review against existing ADRs, a risk-ordered
   test plan derived from acceptance criteria, and a self-verification gate

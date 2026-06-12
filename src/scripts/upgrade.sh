@@ -4,7 +4,7 @@
 # Never deletes or modifies existing graph nodes.
 set -euo pipefail
 
-AKEMI_VERSION="0.0.1"
+AKEMI_VERSION="0.1.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKELETON_DIR="$SCRIPT_DIR/../skeleton"
 

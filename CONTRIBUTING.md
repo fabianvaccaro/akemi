@@ -109,8 +109,11 @@ Checklist for every release:
    no secrets, no personal information in the tree.
 6. Commit `release: <version>`, tag `v<version>` (annotated), push the
    branch and the tag.
-7. Create the GitHub release from the tag with the changelog section as the
-   release notes.
+7. Pushing the tag triggers the `release` workflow
+   (`.github/workflows/release.yml`). It checks that every version file
+   agrees with the tag, extracts the changelog section, and creates the
+   GitHub release. Verify the release appears under the Releases tab; if
+   the workflow fails, fix the cause and re-run it from the Actions tab.
 
 ## Code style
 
