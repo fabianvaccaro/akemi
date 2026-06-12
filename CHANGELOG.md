@@ -5,6 +5,19 @@ All notable changes to Akemi are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `akemi-propose` Claude Code skill: staged design proposal workflow with
+  graph research, architecture review against existing ADRs, a risk-ordered
+  test plan derived from acceptance criteria, and a self-verification gate
+  that checks cited node IDs, ADR compliance, criteria-to-test mapping,
+  impact completeness, dependency licenses, and validator status before the
+  proposal is presented.
+- README: design proposal section and a prompting guide covering graph-first
+  prompts, compliance checks, graph sync, and cross-repository graph access.
+
 ## [0.0.1] - 2026-06-12
 
 First public release.

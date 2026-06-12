@@ -120,6 +120,57 @@ The `.sh` wrappers also run under Git Bash on Windows (Claude Code uses Git Bash
 
 Typical loop: the agent reads `index.yaml`, edits code, updates the touched nodes, then runs `validate.sh`. Rebuild the index when nodes are added or renamed, and rebuild views before reviewing architecture.
 
+## Design proposals
+
+The `akemi-propose` skill (installed with the Claude Code integration) turns a one-line idea into a reviewed design document:
+
+```
+/akemi-propose payment retry policy for the billing module
+```
+
+The workflow runs seven stages in order: research the graph, draft the design, architecture review against existing ADRs, a risk-ordered test plan, persistence to the graph, a self-verification gate, and the final report. The output is a proposal document at `.akemi/docs/proposals/<topic>.md` plus a `doc` node, and `adr` nodes drafted as `proposed` whenever the design sets a new lasting decision.
+
+Two properties make the result trustworthy:
+
+- Compliant by design. Every artifact is created from the node templates, linked with canonical relations, and the workflow does not finish until `validate.sh` reports zero errors.
+- Self-verified. Before presenting, the skill checks its own output: every cited node ID exists in the index, every ADR constraint is satisfied or explicitly superseded, every acceptance criterion has a planned test and every planned test maps back to a criterion, the impact list matches the dependency edges in the graph, and new dependencies carry permissive licenses. Checks that still fail after revision are reported under "Open issues", never hidden.
+
+The test plan is derived from acceptance criteria and risk (business value of the work item times the dependency blast radius of the touched nodes), not from file lists. Tests for getters, framework behavior, configuration, or bare coverage numbers are explicitly rejected.
+
+After approval, `/akemi-plan` decomposes the proposal into epics, features, stories, and tasks.
+
+## Prompting guide
+
+Akemi works best when prompts point the agent at the graph instead of the raw source tree.
+
+**Read the graph first.** Ask for structure through the graph, not by scanning files:
+
+> Read the akemi graph and summarize the architecture of the payments domain.
+
+The agent reads `views/architecture.md`, then the index, then only the node bodies it needs. One read instead of a directory crawl.
+
+**Locate before editing.**
+
+> Using the akemi index, find every node that depends on cls-user-service and show the impact of changing its public methods.
+
+**Check compliance.** Say "check akemi compliance" or run `/akemi-validate`. The agent runs the validator and drives FAIL lines to zero. Do this after every merge or large edit session.
+
+**Keep the graph in sync.** End edit sessions with "update the akemi graph for the changes we just made" or `/akemi-update`. The hooks mark the index stale automatically, but node bodies and relations are the agent's job.
+
+**Propose, then plan.**
+
+> /akemi-propose rate limiting for the public API
+
+then, after approving the proposal, `/akemi-plan` to turn it into backlog items.
+
+**Work across repositories.** Any directory with a `.akemi/` graph can be read by an agent working in another project. Grant access first (Claude Code: `/add-dir /path/to/other-repo`, or start with `claude --add-dir /path/to/other-repo`), then point the prompt at the graph:
+
+> The repo at /path/to/other-repo is governed by akemi. Read its .akemi/graph/views/architecture.md and index.yaml, and tell me which API nodes our client should call.
+
+Read the other project's views and index instead of its source; they are designed to be consumed cross-repo without loading the codebase. Scripts always operate on the repo that contains them, so never run another repo's `.akemi/scripts/` against your own project.
+
+**Anti-patterns.** Do not ask the agent to grep the codebase for structure the index already maps. Do not edit `index.yaml` or `views/*.md` by hand; they are generated. Do not code without a task or story node when SAFe mode is in use.
+
 ## Node kinds
 
 | Kind | Describes |

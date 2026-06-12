@@ -99,7 +99,7 @@ java, scala, etc.), not the root defaults. Maven/Gradle/sbt modules count as wor
 ## Commands
 
 `/akemi-status` (graph health), `/akemi-graph` (topology), `/akemi-backlog` (work item summary),
-`/akemi-plan` (PI/iteration planning), `/akemi-create-node`, `/akemi-scaffold`,
-`/akemi-validate`, `/akemi-update`.
+`/akemi-plan` (PI/iteration planning), `/akemi-propose` (self-verified design proposal),
+`/akemi-create-node`, `/akemi-scaffold`, `/akemi-validate`, `/akemi-update`.
 
 End every task with one line summarizing graph changes: nodes created/updated and validation result.
